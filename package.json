@@ -12,7 +12,7 @@
     "url": "https://github.com/yolfinance/yolfi-agent/issues"
   },
   "bin": {
-    "yolfi": "./src/cli.js"
+    "yolfi": "src/cli.js"
   },
   "exports": {
     ".": "./src/index.js",
