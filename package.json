@@ -3,6 +3,14 @@
   "version": "0.1.0",
   "description": "Thin SDK, CLI, and MCP adapter that lets AI coding agents integrate Yolfi payments.",
   "type": "module",
+  "homepage": "https://yolfi.com/ai-agent-kit",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/yolfinance/yolfi-agent.git"
+  },
+  "bugs": {
+    "url": "https://github.com/yolfinance/yolfi-agent/issues"
+  },
   "bin": {
     "yolfi": "./src/cli.js"
   },
