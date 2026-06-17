@@ -6,4 +6,6 @@ COPY . .
 
 ENV NODE_ENV=production
 
-CMD ["node", "src/cli.js", "mcp"]
+RUN npm install -g mcp-proxy@6.4.3
+
+CMD ["mcp-proxy", "--", "node", "src/cli.js", "mcp"]

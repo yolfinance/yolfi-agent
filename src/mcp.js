@@ -2,10 +2,20 @@ import { YolfiClient, YolfiApiError } from './client.js';
 import { verifyWebhookSignature } from './webhooks.js';
 
 const PROTOCOL_VERSION = '2025-06-18';
+const SUPPORTED_PROTOCOL_VERSIONS = new Set([
+  '2025-06-18',
+  '2025-03-26',
+  '2024-11-05',
+]);
 const SERVER_NAME = 'yolfi-agent-kit';
 const SERVER_TITLE = 'Yolfi Payments MCP';
-const SERVER_VERSION = '0.1.2';
+const SERVER_VERSION = '0.1.3';
 const WEBHOOK_ADAPTERS = ['NONE', 'STRIPE', 'LEMON_SQUEEZY', 'PADDLE', 'POLAR', 'GUMROAD', 'DODO'];
+
+const OUTPUT_SCHEMA = {
+  type: 'object',
+  additionalProperties: true,
+};
 
 function jsonSchema(properties, required = []) {
   return {
@@ -21,18 +31,36 @@ const tools = [
     name: 'yolfi_auth_status',
     title: 'Check Yolfi Auth Status',
     description: 'Verify that YOLFI_API_KEY can authenticate and return the current Yolfi organization context before mutating payment settings.',
+    annotations: {
+      readOnlyHint: true,
+      destructiveHint: false,
+      idempotentHint: true,
+      openWorldHint: false,
+    },
     inputSchema: jsonSchema({}),
   },
   {
     name: 'yolfi_organization_get',
     title: 'Get Yolfi Organization',
     description: 'Read the current Yolfi organization settings, including webhook and settlement configuration visible to this API key.',
+    annotations: {
+      readOnlyHint: true,
+      destructiveHint: false,
+      idempotentHint: true,
+      openWorldHint: false,
+    },
     inputSchema: jsonSchema({}),
   },
   {
     name: 'yolfi_organization_update',
     title: 'Update Yolfi Organization',
     description: 'Update organization profile fields through the existing Yolfi organization endpoint. Do not invent merchant identity, support email, webhook URL, or settlement settings.',
+    annotations: {
+      readOnlyHint: false,
+      destructiveHint: false,
+      idempotentHint: false,
+      openWorldHint: true,
+    },
     inputSchema: jsonSchema({
       name: { type: 'string', description: 'Merchant or project display name approved by the user.' },
       email: { type: 'string', description: 'Merchant support or account email approved by the user.' },
@@ -44,6 +72,12 @@ const tools = [
     name: 'yolfi_settlement_configure',
     title: 'Configure Yolfi Settlement Wallets',
     description: 'Configure settlement wallets after the user provides wallet addresses, networks, and enabled tokens. Never invent wallet addresses.',
+    annotations: {
+      readOnlyHint: false,
+      destructiveHint: false,
+      idempotentHint: false,
+      openWorldHint: true,
+    },
     inputSchema: jsonSchema({
       settlementAccounts: {
         type: 'array',
@@ -56,6 +90,12 @@ const tools = [
     name: 'yolfi_webhooks_configure',
     title: 'Configure Yolfi Webhooks',
     description: 'Configure webhook delivery for the target app. The host must not invent backend URLs and must ensure the app verifies X-Yolfi-Signature.',
+    annotations: {
+      readOnlyHint: false,
+      destructiveHint: false,
+      idempotentHint: false,
+      openWorldHint: true,
+    },
     inputSchema: jsonSchema({
       url: { type: 'string', description: 'HTTPS webhook URL in the target app, for example https://example.com/api/yolfi/webhook.' },
       adapter: { type: 'string', enum: WEBHOOK_ADAPTERS, description: 'Webhook adapter output format. Defaults to NONE if omitted.' },
@@ -65,6 +105,12 @@ const tools = [
     name: 'yolfi_paylinks_create',
     title: 'Create Yolfi Paylink',
     description: 'Create a Yolfi payment link only after the user approves product name, amount, currency, and one-time or recurring payment type.',
+    annotations: {
+      readOnlyHint: false,
+      destructiveHint: false,
+      idempotentHint: false,
+      openWorldHint: true,
+    },
     inputSchema: jsonSchema({
       name: { type: 'string', description: 'User-approved product, plan, donation, or access name shown on checkout.' },
       description: { type: 'string', description: 'Optional user-approved customer-facing description.' },
@@ -80,6 +126,12 @@ const tools = [
     name: 'yolfi_paylinks_list',
     title: 'List Yolfi Paylinks',
     description: 'List existing Yolfi paylinks before creating new ones so agents can avoid duplicates after retries or timeouts.',
+    annotations: {
+      readOnlyHint: true,
+      destructiveHint: false,
+      idempotentHint: true,
+      openWorldHint: false,
+    },
     inputSchema: jsonSchema({
       page: { type: 'number', default: 1, description: 'Page number. Defaults to 1.' },
       rows: { type: 'number', default: 10, description: 'Rows per page. Defaults to 10.' },
@@ -89,12 +141,24 @@ const tools = [
     name: 'yolfi_paylinks_get',
     title: 'Get Yolfi Paylink',
     description: 'Get private paylink details by ID for verification, checkout wiring, or duplicate detection.',
+    annotations: {
+      readOnlyHint: true,
+      destructiveHint: false,
+      idempotentHint: true,
+      openWorldHint: false,
+    },
     inputSchema: jsonSchema({ id: { type: 'string', description: 'Yolfi paylink ID returned by yolfi_paylinks_create or yolfi_paylinks_list.' } }, ['id']),
   },
   {
     name: 'yolfi_paylinks_disable',
     title: 'Disable Yolfi Paylink',
     description: 'Disable a paylink. This is destructive and must only run after explicit user confirmation.',
+    annotations: {
+      readOnlyHint: false,
+      destructiveHint: true,
+      idempotentHint: false,
+      openWorldHint: true,
+    },
     inputSchema: jsonSchema({
       id: { type: 'string', description: 'Yolfi paylink ID to disable.' },
       confirm: { const: true, description: 'Must be true only after explicit user confirmation.' },
@@ -104,6 +168,12 @@ const tools = [
     name: 'yolfi_payments_create',
     title: 'Create Yolfi Public Payment',
     description: 'Create a public payment invoice from an existing paylink for checkout integration, testing, or customer flow setup.',
+    annotations: {
+      readOnlyHint: false,
+      destructiveHint: false,
+      idempotentHint: false,
+      openWorldHint: true,
+    },
     inputSchema: jsonSchema({
       paylinkId: { type: 'string', description: 'Yolfi paylink ID used to create the customer payment.' },
       network: { type: 'string', description: 'Blockchain network identifier supported by the Yolfi organization, for example ARB.' },
@@ -116,12 +186,24 @@ const tools = [
     name: 'yolfi_payments_status',
     title: 'Get Yolfi Payment Status',
     description: 'Get public payment status by ID. Do not treat a frontend redirect as proof of payment.',
+    annotations: {
+      readOnlyHint: true,
+      destructiveHint: false,
+      idempotentHint: true,
+      openWorldHint: false,
+    },
     inputSchema: jsonSchema({ id: { type: 'string', description: 'Yolfi payment ID returned by yolfi_payments_create.' } }, ['id']),
   },
   {
     name: 'yolfi_webhooks_verify',
     title: 'Verify Yolfi Webhook Signature',
     description: 'Verify an X-Yolfi-Signature HMAC over the raw JSON webhook payload before trusting payment events.',
+    annotations: {
+      readOnlyHint: true,
+      destructiveHint: false,
+      idempotentHint: true,
+      openWorldHint: false,
+    },
     inputSchema: jsonSchema({
       payload: { type: 'string', description: 'Raw webhook request body string, before JSON parsing.' },
       signature: { type: 'string', description: 'X-Yolfi-Signature header value.' },
@@ -190,6 +272,14 @@ function errorResult(error) {
   };
 }
 
+function normalizeArguments(args) {
+  if (!args || typeof args !== 'object' || Array.isArray(args)) {
+    return {};
+  }
+
+  return args;
+}
+
 export async function callMcpTool(name, args = {}, options = {}) {
   const client = options.client || new YolfiClient(options);
 
@@ -237,35 +327,67 @@ function encodeMessage(message) {
   return `Content-Length: ${Buffer.byteLength(body, 'utf8')}\r\n\r\n${body}`;
 }
 
-function readMessages(onMessage) {
+function parseJsonMessage(body) {
+  return JSON.parse(body);
+}
+
+function readMessages(onMessage, onError) {
   let buffer = Buffer.alloc(0);
   process.stdin.on('data', (chunk) => {
     buffer = Buffer.concat([buffer, chunk]);
     while (true) {
       const marker = buffer.indexOf('\r\n\r\n');
-      if (marker === -1) {
-        return;
-      }
+      if (marker !== -1) {
+        const header = buffer.subarray(0, marker).toString('utf8');
+        const match = header.match(/Content-Length:\s*(\d+)/i);
+        if (!match) {
+          buffer = buffer.subarray(marker + 4);
+          continue;
+        }
 
-      const header = buffer.subarray(0, marker).toString('utf8');
-      const match = header.match(/Content-Length:\s*(\d+)/i);
-      if (!match) {
-        buffer = buffer.subarray(marker + 4);
+        const length = Number(match[1]);
+        const bodyStart = marker + 4;
+        const bodyEnd = bodyStart + length;
+        if (buffer.length < bodyEnd) {
+          return;
+        }
+
+        const body = buffer.subarray(bodyStart, bodyEnd).toString('utf8');
+        buffer = buffer.subarray(bodyEnd);
+        try {
+          onMessage(parseJsonMessage(body), { framed: true });
+        } catch (error) {
+          onError(error, { framed: true });
+        }
         continue;
       }
 
-      const length = Number(match[1]);
-      const bodyStart = marker + 4;
-      const bodyEnd = bodyStart + length;
-      if (buffer.length < bodyEnd) {
+      const newline = buffer.indexOf('\n');
+      if (newline === -1) {
         return;
       }
 
-      const body = buffer.subarray(bodyStart, bodyEnd).toString('utf8');
-      buffer = buffer.subarray(bodyEnd);
-      onMessage(JSON.parse(body));
+      const line = buffer.subarray(0, newline).toString('utf8').trim();
+      buffer = buffer.subarray(newline + 1);
+      if (!line) {
+        continue;
+      }
+
+      try {
+        onMessage(parseJsonMessage(line), { framed: false });
+      } catch (error) {
+        onError(error, { framed: false });
+      }
     }
   });
+}
+
+function negotiateProtocolVersion(requestedVersion) {
+  if (SUPPORTED_PROTOCOL_VERSIONS.has(requestedVersion)) {
+    return requestedVersion;
+  }
+
+  return PROTOCOL_VERSION;
 }
 
 async function handleMcpRequest(message) {
@@ -275,7 +397,7 @@ async function handleMcpRequest(message) {
       jsonrpc: '2.0',
       id,
       result: {
-        protocolVersion: params?.protocolVersion || PROTOCOL_VERSION,
+        protocolVersion: negotiateProtocolVersion(params?.protocolVersion),
         capabilities: {
           tools: { listChanged: false },
           resources: { listChanged: false },
@@ -301,7 +423,7 @@ async function handleMcpRequest(message) {
   }
 
   if (method === 'tools/call') {
-    const result = await callMcpTool(params?.name, params?.arguments || {});
+    const result = await callMcpTool(params?.name, normalizeArguments(params?.arguments));
     return { jsonrpc: '2.0', id, result };
   }
 
@@ -350,11 +472,29 @@ async function handleMcpRequest(message) {
 }
 
 export function startMcpServer() {
-  readMessages(async (message) => {
-    if (!message.id) {
+  readMessages(async (message, meta) => {
+    if (!Object.prototype.hasOwnProperty.call(message, 'id')) {
       return;
     }
     const response = await handleMcpRequest(message);
-    process.stdout.write(encodeMessage(response));
+    process.stdout.write(meta.framed ? encodeMessage(response) : `${JSON.stringify(response)}\n`);
+  }, (error, meta) => {
+    const response = {
+      jsonrpc: '2.0',
+      id: null,
+      error: { code: -32700, message: 'Parse error', data: error.message },
+    };
+    process.stdout.write(meta.framed ? encodeMessage(response) : `${JSON.stringify(response)}\n`);
   });
 }
+
+export const mcp = {
+  protocolVersion: PROTOCOL_VERSION,
+  serverName: SERVER_NAME,
+  serverTitle: SERVER_TITLE,
+  serverVersion: SERVER_VERSION,
+  tools,
+  resources,
+  prompts,
+  outputSchema: OUTPUT_SCHEMA,
+};

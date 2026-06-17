@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { createMcpCapabilities } from '../src/mcp.js';
+import { createMcpCapabilities, mcp } from '../src/mcp.js';
 
 test('MCP capabilities expose yolfi-api tools and yolfi-knowledge resources', () => {
   const capabilities = createMcpCapabilities();
@@ -32,4 +32,24 @@ test('MCP tools expose titles and argument descriptions for registry scanners', 
       assert.ok(propertySchema.description.length > 0, `${tool.name}.${propertyName} description`);
     }
   }
+});
+
+test('MCP tools expose safety annotations for registry scanners', () => {
+  const capabilities = createMcpCapabilities();
+  const disableTool = capabilities.tools.find((tool) => tool.name === 'yolfi_paylinks_disable');
+  const listTool = capabilities.tools.find((tool) => tool.name === 'yolfi_paylinks_list');
+
+  assert.equal(disableTool.annotations.destructiveHint, true);
+  assert.equal(disableTool.annotations.readOnlyHint, false);
+  assert.equal(listTool.annotations.readOnlyHint, true);
+  assert.equal(listTool.annotations.destructiveHint, false);
+});
+
+test('MCP static export exposes server metadata for scanners', () => {
+  assert.equal(mcp.protocolVersion, '2025-06-18');
+  assert.equal(mcp.serverName, 'yolfi-agent-kit');
+  assert.equal(mcp.serverTitle, 'Yolfi Payments MCP');
+  assert.equal(mcp.serverVersion, '0.1.3');
+  assert.ok(mcp.tools.some((tool) => tool.name === 'yolfi_paylinks_create'));
+  assert.equal(mcp.outputSchema.type, 'object');
 });
