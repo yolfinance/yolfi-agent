@@ -1,8 +1,9 @@
 {
   "name": "@yolfi/agent",
-  "version": "0.1.0",
-  "description": "Thin SDK, CLI, and MCP adapter that lets AI coding agents integrate Yolfi payments.",
+  "version": "0.1.1",
+  "description": "AI agent payment integration SDK, CLI, and MCP server for adding Yolfi crypto checkout, payment links, webhooks, and payment status checks.",
   "type": "module",
+  "mcpName": "io.github.yolfinance/yolfi-agent",
   "homepage": "https://yolfi.com/ai-agent-kit",
   "repository": {
     "type": "git",
@@ -21,21 +22,45 @@
   "files": [
     "src",
     "examples",
+    "assets",
+    "docs",
+    "glama.json",
+    "server.json",
+    "LICENSE",
     "README.md",
     "SKILL.md"
   ],
   "scripts": {
+    "check": "npm run lint && npm test",
     "test": "node --test",
     "lint": "node --check src/*.js"
   },
   "keywords": [
+    "yolfi",
+    "yolfi-agent-kit",
+    "ai-agent-payment-integration",
+    "ai-agent-payments",
     "mcp",
+    "mcp-server",
+    "model-context-protocol",
     "ai-agents",
+    "ai-agent-tools",
+    "agentic-payments",
     "crypto-payments",
+    "stablecoin-payments",
     "payment-api",
+    "payment-links",
     "checkout",
+    "checkout-api",
     "webhooks",
-    "stablecoins"
+    "webhook-verification",
+    "stablecoins",
+    "subscriptions",
+    "donations",
+    "codex",
+    "claude-code",
+    "cursor",
+    "openclaw"
   ],
   "engines": {
     "node": ">=18"

@@ -1,0 +1,52 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.github.yolfinance/yolfi-agent",
+  "title": "Yolfi Payments MCP",
+  "description": "Let AI agents add Yolfi crypto checkout, paylinks, webhooks, and status checks.",
+  "websiteUrl": "https://yolfi.com/ai-agent-kit",
+  "repository": {
+    "url": "https://github.com/yolfinance/yolfi-agent",
+    "source": "github"
+  },
+  "version": "0.1.1",
+  "packages": [
+    {
+      "registryType": "npm",
+      "identifier": "@yolfi/agent",
+      "version": "0.1.1",
+      "runtimeHint": "npx",
+      "packageArguments": [
+        {
+          "type": "positional",
+          "value": "mcp"
+        }
+      ],
+      "transport": {
+        "type": "stdio"
+      },
+      "environmentVariables": [
+        {
+          "name": "YOLFI_API_KEY",
+          "description": "Yolfi organization API key. Required for API tools that read or mutate organization, webhook, settlement, paylink, or transaction data.",
+          "format": "string",
+          "isRequired": true,
+          "isSecret": true
+        },
+        {
+          "name": "YOLFI_API_BASE_URL",
+          "description": "Optional Yolfi API base URL. Defaults to https://app.yolfi.com/api.",
+          "format": "string",
+          "isRequired": false,
+          "isSecret": false
+        },
+        {
+          "name": "YOLFI_PAY_BASE_URL",
+          "description": "Optional hosted checkout base URL. Defaults to https://pay.yolfi.com.",
+          "format": "string",
+          "isRequired": false,
+          "isSecret": false
+        }
+      ]
+    }
+  ]
+}

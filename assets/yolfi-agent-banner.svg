@@ -1,0 +1,15 @@
+<svg width="1280" height="640" viewBox="0 0 1280 640" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="title desc">
+  <title id="title">Yolfi Agent Kit</title>
+  <desc id="desc">AI agent payment integration for crypto checkout, payment links, MCP, CLI, SDK, and webhooks.</desc>
+  <rect width="1280" height="640" fill="#041F1E"/>
+  <rect x="64" y="64" width="1152" height="512" rx="32" fill="#E8FFFB"/>
+  <rect x="104" y="104" width="1072" height="432" rx="24" fill="#062F2D"/>
+  <path d="M104 444C240 376 363 377 471 447C595 528 752 522 886 444C1003 376 1096 373 1176 421V536H104V444Z" fill="#58E6D3" fill-opacity="0.92"/>
+  <path d="M104 383C260 310 392 318 510 390C646 474 811 460 936 374C1030 309 1112 305 1176 338V536H104V383Z" fill="#BDF9F2" fill-opacity="0.5"/>
+  <text x="154" y="192" fill="#F4FFFD" font-family="Inter, Arial, sans-serif" font-size="72" font-weight="800">Yolfi Agent Kit</text>
+  <text x="154" y="268" fill="#BDF9F2" font-family="Inter, Arial, sans-serif" font-size="34" font-weight="600">AI agent payment integration for crypto checkout</text>
+  <text x="154" y="334" fill="#F4FFFD" font-family="Inter, Arial, sans-serif" font-size="28" font-weight="500">MCP server • JSON CLI • SDK • payment links • webhooks</text>
+  <rect x="154" y="390" width="320" height="70" rx="16" fill="#F4FFFD"/>
+  <text x="186" y="435" fill="#062F2D" font-family="Inter, Arial, sans-serif" font-size="24" font-weight="800">npx -y @yolfi/agent</text>
+  <text x="988" y="472" fill="#062F2D" font-family="Inter, Arial, sans-serif" font-size="38" font-weight="900" letter-spacing="8">YOLFI</text>
+</svg>

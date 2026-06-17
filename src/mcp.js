@@ -263,7 +263,7 @@ async function handleMcpRequest(message) {
         },
         serverInfo: {
           name: 'Yolfi Payments MCP',
-          version: '0.1.0',
+          version: '0.1.1',
         },
       },
     };
