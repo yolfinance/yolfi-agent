@@ -9,7 +9,7 @@ const SUPPORTED_PROTOCOL_VERSIONS = new Set([
 ]);
 const SERVER_NAME = 'yolfi-agent-kit';
 const SERVER_TITLE = 'Yolfi Payments MCP';
-const SERVER_VERSION = '0.1.3';
+const SERVER_VERSION = '0.1.4';
 const WEBHOOK_ADAPTERS = ['NONE', 'STRIPE', 'LEMON_SQUEEZY', 'PADDLE', 'POLAR', 'GUMROAD', 'DODO'];
 
 const OUTPUT_SCHEMA = {
@@ -41,7 +41,7 @@ const tools = [
       agentName: { type: 'string', description: 'Name of the coding agent or MCP host, for example Codex, Claude Code, Cursor, or OpenClaw.' },
       projectName: { type: 'string', description: 'User-approved product or project name for the Yolfi workspace.' },
       projectUrl: { type: 'string', description: 'Optional public or local URL of the target product, if known.' },
-      integrationIntent: { type: 'string', description: 'User-approved reason for the integration, for example accept_payments, subscription, donation, or sell_digital_product.' },
+      integrationIntent: { type: 'string', default: 'accept_payments', description: 'User-approved reason for the integration. Defaults to accept_payments when omitted.' },
       language: { type: 'string', description: 'Optional preferred language code for agent-facing responses.' },
       ref: { type: 'string', description: 'Optional source tag such as mcp, glama, npm, docs, codex, claude-code, or cursor.' },
       metadata: { type: 'object', description: 'Optional safe non-secret metadata. Do not include API keys, wallet private keys, tokens, or personal secrets.' },
@@ -300,13 +300,29 @@ function normalizeArguments(args) {
   return args;
 }
 
+function optionalString(value) {
+  return typeof value === 'string' && value.trim() ? value.trim() : undefined;
+}
+
+function normalizeAgentRegistrationArgs(args) {
+  return {
+    ...args,
+    agentName: optionalString(args.agentName) || args.agentName,
+    projectName: optionalString(args.projectName) || args.projectName,
+    projectUrl: optionalString(args.projectUrl),
+    integrationIntent: optionalString(args.integrationIntent) || 'accept_payments',
+    language: optionalString(args.language),
+    ref: optionalString(args.ref),
+  };
+}
+
 export async function callMcpTool(name, args = {}, options = {}) {
   const client = options.client || new YolfiClient(options);
 
   try {
     switch (name) {
       case 'yolfi_agent_register':
-        return textResult('Yolfi workspace registered. Store the returned API key securely before calling private tools.', await client.registerAgent(args));
+        return textResult('Yolfi workspace registered. Store the returned API key securely before calling private tools.', await client.registerAgent(normalizeAgentRegistrationArgs(args)));
       case 'yolfi_auth_status':
       case 'yolfi_organization_get':
         return textResult('Yolfi organization loaded', await client.authStatus());

@@ -1,6 +1,6 @@
 {
   "name": "@yolfi/agent",
-  "version": "0.1.3",
+  "version": "0.1.4",
   "description": "AI agent payment integration SDK, CLI, and MCP server for adding Yolfi crypto checkout, payment links, webhooks, and payment status checks.",
   "type": "module",
   "mcpName": "io.github.yolfinance/yolfi-agent",

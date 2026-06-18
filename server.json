@@ -8,12 +8,12 @@
     "url": "https://github.com/yolfinance/yolfi-agent",
     "source": "github"
   },
-  "version": "0.1.3",
+  "version": "0.1.4",
   "packages": [
     {
       "registryType": "npm",
       "identifier": "@yolfi/agent",
-      "version": "0.1.3",
+      "version": "0.1.4",
       "runtimeHint": "npx",
       "packageArguments": [
         {

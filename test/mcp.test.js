@@ -16,7 +16,6 @@ test('MCP agent registration works without an API key', async () => {
   const payload = {
     agentName: 'Codex',
     projectName: 'Space Shop',
-    integrationIntent: 'accept_payments',
   };
   const result = await callMcpTool('yolfi_agent_register', payload, {
     client: {
@@ -31,7 +30,13 @@ test('MCP agent registration works without an API key', async () => {
   });
 
   assert.equal(result.structuredContent.success, true);
-  assert.deepEqual(result.structuredContent.data.data.received, payload);
+  assert.deepEqual(result.structuredContent.data.data.received, {
+    ...payload,
+    projectUrl: undefined,
+    integrationIntent: 'accept_payments',
+    language: undefined,
+    ref: undefined,
+  });
 });
 
 test('destructive MCP tools are clearly marked', () => {
@@ -72,7 +77,7 @@ test('MCP static export exposes server metadata for scanners', () => {
   assert.equal(mcp.protocolVersion, '2025-06-18');
   assert.equal(mcp.serverName, 'yolfi-agent-kit');
   assert.equal(mcp.serverTitle, 'Yolfi Payments MCP');
-  assert.equal(mcp.serverVersion, '0.1.3');
+  assert.equal(mcp.serverVersion, '0.1.4');
   assert.ok(mcp.tools.some((tool) => tool.name === 'yolfi_paylinks_create'));
   assert.equal(mcp.outputSchema.type, 'object');
 });
