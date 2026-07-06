@@ -150,6 +150,11 @@ Create a public payment invoice from a paylink:
 yolfi payments:create --json examples/payment.create.json
 ```
 
+Besides the required `paylinkId`, `network`, and `symbol`, the invoice body accepts optional
+`customerEmail`, `clientReferenceId` (your internal customer/order reference, returned as
+`customer.clientReferenceId` in webhooks), `customerName`, `customerPhone`, `customerDateOfBirth`,
+`customerAddress`, `subscriptionId`, and `metadata`.
+
 Check payment status:
 
 ```bash

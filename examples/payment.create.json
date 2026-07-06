@@ -3,6 +3,7 @@
   "network": "ARB",
   "symbol": "USDC",
   "customerEmail": "customer@example.com",
+  "clientReferenceId": "your-internal-user-or-order-id",
   "metadata": {
     "source": "agent-smoke-test"
   }
