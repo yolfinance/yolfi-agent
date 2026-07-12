@@ -25,6 +25,13 @@ Use this when the user asks to add crypto payments, payment links, checkout, sub
 14. Verify payment status with `GET /api/public/payments/:id`.
 15. Report changed files and exact verification commands.
 
+## Webhook Contract
+
+- Publicly supported endpoint adapters are `NONE`, `STRIPE`, and `LEMON_SQUEEZY`. Treat `NONE` as native Yolfi payload format, not as the absence of a provider.
+- Create independent endpoints through `POST /api/private/organization/webhook-endpoints`; do not use legacy organization-level `webhookUrl` or `webhookAdapter` fields.
+- Each endpoint has its own signing secret. Save the secret returned at creation because list operations do not return it.
+- `YOLFI_API_KEY` authorizes Yolfi API calls and must never be used to verify webhook signatures. Verify `X-Yolfi-Signature` with that endpoint's signing secret only.
+
 ## Do Not
 
 - Do not invent wallet addresses.
