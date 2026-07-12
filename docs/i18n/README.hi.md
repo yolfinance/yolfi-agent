@@ -301,7 +301,7 @@ import { verifyWebhookSignature } from "@yolfi/agent";
 const valid = verifyWebhookSignature(
   rawBody,
   request.headers["x-yolfi-signature"],
-  process.env.YOLFI_API_KEY,
+  process.env.YOLFI_WEBHOOK_SECRET,
 );
 
 if (!valid) {
@@ -352,7 +352,7 @@ auth:status -> organization:get -> paylinks:list -> उपयोगकर्त�
 ## मौजूदा सीमाएं
 
 - MCP सर्वर अभी stdio transport का उपयोग करता है।
-- Webhook signing मौजूदा Yolfi signature contract का उपयोग करता है। अगर Yolfi बाद में Webhook secrets को organization API keys से अलग करता है, तो यह पैकेज नया secret configuration path उपलब्ध कराएगा।
+- हर Webhook endpoint का अपना signing secret होता है, जो केवल endpoint बनाते या rotate करते समय लौटाया जाता है। Verification के लिए `--secret` या `YOLFI_WEBHOOK_SECRET` का उपयोग करें; organization API key signing secret नहीं है।
 - Agent registration API key को एक बार लौटाता है। एजेंटों को उसे ignored env file, deployment secret या secret manager में रखना चाहिए।
 - अंतिम भुगतान पुष्टि सत्यापित Webhook और भुगतान स्थिति जांच से आनी चाहिए, इंटरफ़ेस रीडायरेक्ट से नहीं।
 - MCP directory approval इस package से अलग है। Listing accepted होने से पहले official directory approval का दावा न करें।

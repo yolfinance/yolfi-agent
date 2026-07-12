@@ -11,7 +11,11 @@ Usage:
   yolfi auth:status
   yolfi organization:update --json organization.json
   yolfi settlement:configure --json settlement.json
-  yolfi webhooks:configure --url https://example.com/api/yolfi/webhook --adapter STRIPE
+  yolfi webhooks:add --name Analytics --url https://example.com/api/yolfi/webhook --adapter NONE
+  yolfi webhooks:list
+  yolfi webhooks:update --id <endpointId> --json endpoint.json
+  yolfi webhooks:rotate-secret --id <endpointId> --confirm
+  yolfi webhooks:remove --id <endpointId> --confirm
   yolfi paylinks:create --json paylink.json
   yolfi paylinks:list --page 1 --rows 10
   yolfi paylinks:get --id <paylinkId>
@@ -117,10 +121,30 @@ async function run(argv = process.argv.slice(2)) {
       break;
     }
     case 'webhooks:configure':
+    case 'webhooks:add':
       result = await client.configureWebhooks({
+        name: flags.name || 'Webhook',
         url: flags.url,
         adapter: flags.adapter || 'NONE',
       });
+      break;
+    case 'webhooks:list':
+      result = await client.listWebhookEndpoints();
+      break;
+    case 'webhooks:update':
+      result = await client.updateWebhookEndpoint(flags.id, readJson(flags.json));
+      break;
+    case 'webhooks:rotate-secret':
+      if (flags.confirm !== true) {
+        throw new Error('webhooks:rotate-secret requires --confirm because the previous secret stops signing new deliveries');
+      }
+      result = await client.rotateWebhookEndpointSecret(flags.id);
+      break;
+    case 'webhooks:remove':
+      if (flags.confirm !== true) {
+        throw new Error('webhooks:remove is destructive; rerun with --confirm after user approval');
+      }
+      result = await client.deleteWebhookEndpoint(flags.id);
       break;
     case 'paylinks:create':
       result = await client.createPaylink(readJson(flags.json));
@@ -145,7 +169,10 @@ async function run(argv = process.argv.slice(2)) {
       break;
     case 'webhooks:verify': {
       const payload = readPayload(flags);
-      const secret = flags.secret || process.env.YOLFI_WEBHOOK_SECRET || process.env.YOLFI_API_KEY || '';
+      const secret = flags.secret || process.env.YOLFI_WEBHOOK_SECRET || '';
+      if (!secret) {
+        throw new Error('Webhook signing secret is required; pass --secret or set YOLFI_WEBHOOK_SECRET');
+      }
       result = {
         success: true,
         data: {

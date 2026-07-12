@@ -301,7 +301,7 @@ import { verifyWebhookSignature } from "@yolfi/agent";
 const valid = verifyWebhookSignature(
   rawBody,
   request.headers["x-yolfi-signature"],
-  process.env.YOLFI_API_KEY,
+  process.env.YOLFI_WEBHOOK_SECRET,
 );
 
 if (!valid) {
@@ -352,7 +352,7 @@ auth:status -> organization:get -> paylinks:list -> 用户确认 -> settlement:c
 ## 当前限制
 
 - MCP 服务器目前使用 stdio 传输。
-- Webhook 签名使用当前 Yolfi 签名约定。如果 Yolfi 之后把 Webhook 密钥与组织 API 密钥分离，此包会提供新的密钥配置路径。
+- 每个 Webhook endpoint 都有独立的签名密钥，该密钥仅在创建 endpoint 或轮换时返回。验证时请使用 `--secret` 或 `YOLFI_WEBHOOK_SECRET`；组织 API 密钥不会用于签名。
 - 代理注册只返回一次 API 密钥。代理必须把它存放在被忽略的 env 文件、部署密钥或密钥管理器中。
 - 最终支付确认应来自已验证的 Webhook 和支付状态检查，而不是界面跳转。
 - MCP 目录审核独立于此包。不要在 listing 被接受前声称已获得官方目录批准。

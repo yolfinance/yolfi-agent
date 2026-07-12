@@ -301,7 +301,7 @@ import { verifyWebhookSignature } from "@yolfi/agent";
 const valid = verifyWebhookSignature(
   rawBody,
   request.headers["x-yolfi-signature"],
-  process.env.YOLFI_API_KEY,
+  process.env.YOLFI_WEBHOOK_SECRET,
 );
 
 if (!valid) {

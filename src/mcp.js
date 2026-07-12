@@ -10,7 +10,7 @@ const SUPPORTED_PROTOCOL_VERSIONS = new Set([
 const SERVER_NAME = 'yolfi-agent-kit';
 const SERVER_TITLE = 'Yolfi Payments MCP';
 const SERVER_VERSION = '0.1.4';
-const WEBHOOK_ADAPTERS = ['NONE', 'STRIPE', 'LEMON_SQUEEZY', 'PADDLE', 'POLAR', 'GUMROAD', 'DODO'];
+const WEBHOOK_ADAPTERS = ['NONE', 'STRIPE', 'LEMON_SQUEEZY'];
 
 const OUTPUT_SCHEMA = {
   type: 'object',
@@ -74,7 +74,7 @@ const tools = [
   {
     name: 'yolfi_organization_update',
     title: 'Update Yolfi Organization',
-    description: 'Update organization profile fields through the existing Yolfi organization endpoint. Do not invent merchant identity, support email, webhook URL, or settlement settings.',
+    description: 'Update organization profile fields through the existing Yolfi organization endpoint. Do not invent merchant identity, support email, or settlement settings.',
     annotations: {
       readOnlyHint: false,
       destructiveHint: false,
@@ -84,8 +84,6 @@ const tools = [
     inputSchema: jsonSchema({
       name: { type: 'string', description: 'Merchant or project display name approved by the user.' },
       email: { type: 'string', description: 'Merchant support or account email approved by the user.' },
-      webhookUrl: { type: 'string', description: 'HTTPS webhook endpoint in the target application. Ask the user if the backend URL is unknown.' },
-      webhookAdapter: { type: 'string', enum: WEBHOOK_ADAPTERS, description: 'Webhook adapter output format. Use NONE unless the target app expects a compatible provider payload.' },
     }),
   },
   {
@@ -117,9 +115,50 @@ const tools = [
       openWorldHint: true,
     },
     inputSchema: jsonSchema({
+      name: { type: 'string', description: 'Endpoint display name, for example Merchant or Talivia analytics.' },
       url: { type: 'string', description: 'HTTPS webhook URL in the target app, for example https://example.com/api/yolfi/webhook.' },
       adapter: { type: 'string', enum: WEBHOOK_ADAPTERS, description: 'Webhook adapter output format. Defaults to NONE if omitted.' },
     }, ['url']),
+  },
+  {
+    name: 'yolfi_webhooks_list',
+    title: 'List Yolfi Webhook Endpoints',
+    description: 'List all independent webhook endpoints configured for the current organization.',
+    annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
+    inputSchema: jsonSchema({}),
+  },
+  {
+    name: 'yolfi_webhooks_update',
+    title: 'Update Yolfi Webhook Endpoint',
+    description: 'Update the name, URL, adapter, or enabled state of one independent Yolfi webhook endpoint.',
+    annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: true },
+    inputSchema: jsonSchema({
+      id: { type: 'string', description: 'Webhook endpoint id.' },
+      name: { type: 'string', description: 'Endpoint display name.' },
+      url: { type: 'string', description: 'HTTPS webhook URL.' },
+      adapter: { type: 'string', enum: WEBHOOK_ADAPTERS, description: 'Webhook adapter output format.' },
+      enabled: { type: 'boolean', description: 'Whether this endpoint receives new deliveries.' },
+    }, ['id']),
+  },
+  {
+    name: 'yolfi_webhooks_rotate_secret',
+    title: 'Rotate Yolfi Webhook Signing Secret',
+    description: 'Rotate an endpoint-specific webhook signing secret. The new plaintext secret is returned once and must be stored securely.',
+    annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: false, openWorldHint: false },
+    inputSchema: jsonSchema({
+      id: { type: 'string', description: 'Webhook endpoint id.' },
+      confirm: { const: true, description: 'Must be true only after explicit user confirmation.' },
+    }, ['id', 'confirm']),
+  },
+  {
+    name: 'yolfi_webhooks_delete',
+    title: 'Delete Yolfi Webhook Endpoint',
+    description: 'Delete an unused webhook endpoint or disable it when existing delivery history must be retained.',
+    annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: true, openWorldHint: true },
+    inputSchema: jsonSchema({
+      id: { type: 'string', description: 'Webhook endpoint id.' },
+      confirm: { const: true, description: 'Must be true only after explicit user confirmation.' },
+    }, ['id', 'confirm']),
   },
   {
     name: 'yolfi_paylinks_create',
@@ -233,7 +272,7 @@ const tools = [
     inputSchema: jsonSchema({
       payload: { type: 'string', description: 'Raw webhook request body string, before JSON parsing.' },
       signature: { type: 'string', description: 'X-Yolfi-Signature header value.' },
-      secret: { type: 'string', description: 'Optional explicit webhook secret. Defaults to YOLFI_WEBHOOK_SECRET or YOLFI_API_KEY.' },
+      secret: { type: 'string', description: 'Optional explicit endpoint signing secret. Defaults to YOLFI_WEBHOOK_SECRET.' },
     }, ['payload', 'signature']),
   },
 ];
@@ -259,7 +298,7 @@ const prompts = [
 const resourceText = {
   'yolfi://docs/llms': '# Yolfi for AI agents\nUse @yolfi/agent or the Yolfi MCP tools to register a workspace, create paylinks, configure webhooks, and verify payment status. Registration is public and does not require YOLFI_API_KEY; private organization and paylink tools require the key returned by registration.',
   'yolfi://docs/agent-quickstart': '# Agent quickstart\n1. Check for YOLFI_API_KEY. 2. If no key exists, call yolfi_agent_register or yolfi auth:agent-register; registration is public and does not need a key. 3. Store the returned key in an ignored env file or secret manager. 4. Ask for wallet, price, currency, and webhook URL. 5. Use private Yolfi tools with YOLFI_API_KEY. 6. Create paylink. 7. Store ids in env/config. 8. Verify payment status and webhook signature.',
-  'yolfi://docs/webhooks': '# Webhooks\nYolfi signs the raw JSON payload with HMAC-SHA256 base64 in X-Yolfi-Signature. In v1 the secret is the organization API key.',
+  'yolfi://docs/webhooks': '# Webhooks\nYolfi signs the raw JSON payload with HMAC-SHA256 base64 in X-Yolfi-Signature. Each endpoint has its own signing secret, returned only when the endpoint is created or rotated.',
   'yolfi://docs/paylinks': '# Paylinks\nUse POST /api/private/paylinks/create with bearer API key. Do not create duplicate paylinks after timeout without listing existing paylinks first.',
   'yolfi://examples/codex': '# Codex\nUse npx -y @yolfi/agent help, inspect the target app, then use Yolfi tools to add checkout and webhook handling.',
   'yolfi://examples/claude-code': '# Claude Code\nUse the Yolfi MCP server and ask the user for wallet and pricing decisions before mutating the target app.',
@@ -337,7 +376,23 @@ export async function callMcpTool(name, args = {}, options = {}) {
       case 'yolfi_settlement_configure':
         return textResult('Yolfi settlement accounts configured', await client.configureSettlement(args.settlementAccounts));
       case 'yolfi_webhooks_configure':
-        return textResult('Yolfi webhooks configured', await client.configureWebhooks(args));
+        return textResult('Yolfi webhook endpoint created', await client.configureWebhooks(args));
+      case 'yolfi_webhooks_list':
+        return textResult('Yolfi webhook endpoints listed', await client.listWebhookEndpoints());
+      case 'yolfi_webhooks_update': {
+        const { id, ...payload } = args;
+        return textResult('Yolfi webhook endpoint updated', await client.updateWebhookEndpoint(id, payload));
+      }
+      case 'yolfi_webhooks_rotate_secret':
+        if (args.confirm !== true) {
+          throw new Error('confirm=true is required to rotate a webhook signing secret');
+        }
+        return textResult('Yolfi webhook endpoint secret rotated', await client.rotateWebhookEndpointSecret(args.id));
+      case 'yolfi_webhooks_delete':
+        if (args.confirm !== true) {
+          throw new Error('confirm=true is required to delete a webhook endpoint');
+        }
+        return textResult('Yolfi webhook endpoint deleted', await client.deleteWebhookEndpoint(args.id));
       case 'yolfi_paylinks_create':
         return textResult('Yolfi paylink created', await client.createPaylink(args));
       case 'yolfi_paylinks_list':
@@ -354,7 +409,10 @@ export async function callMcpTool(name, args = {}, options = {}) {
       case 'yolfi_payments_status':
         return textResult('Yolfi payment status loaded', await client.paymentStatus(args.id));
       case 'yolfi_webhooks_verify': {
-        const secret = args.secret || process.env.YOLFI_WEBHOOK_SECRET || process.env.YOLFI_API_KEY || '';
+        const secret = args.secret || process.env.YOLFI_WEBHOOK_SECRET || '';
+        if (!secret) {
+          throw new Error('Webhook signing secret is required; pass secret or set YOLFI_WEBHOOK_SECRET');
+        }
         const valid = verifyWebhookSignature(args.payload, args.signature, secret);
         return textResult('Yolfi webhook signature checked', { valid });
       }

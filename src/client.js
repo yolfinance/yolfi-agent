@@ -109,8 +109,38 @@ export class YolfiClient {
     return this.updateOrganization({ settlementAccounts });
   }
 
-  configureWebhooks({ url, adapter = 'NONE' }) {
-    return this.updateOrganization({ webhookUrl: url, webhookAdapter: adapter });
+  configureWebhooks({ name = 'Webhook', url, adapter = 'NONE', enabled = true }) {
+    return this.createWebhookEndpoint({ name, url, adapter, enabled });
+  }
+
+  listWebhookEndpoints() {
+    return this.request('/private/organization/webhook-endpoints');
+  }
+
+  createWebhookEndpoint(payload) {
+    return this.request('/private/organization/webhook-endpoints', {
+      method: 'POST',
+      body: payload,
+    });
+  }
+
+  updateWebhookEndpoint(id, payload) {
+    return this.request(`/private/organization/webhook-endpoints/${encodeURIComponent(id)}`, {
+      method: 'PUT',
+      body: payload,
+    });
+  }
+
+  deleteWebhookEndpoint(id) {
+    return this.request(`/private/organization/webhook-endpoints/${encodeURIComponent(id)}`, {
+      method: 'DELETE',
+    });
+  }
+
+  rotateWebhookEndpointSecret(id) {
+    return this.request(`/private/organization/webhook-endpoints/${encodeURIComponent(id)}/rotate-secret`, {
+      method: 'POST',
+    });
   }
 
   getApiKey() {

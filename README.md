@@ -124,13 +124,23 @@ Configure settlement wallets after the user provides wallet addresses:
 yolfi settlement:configure --json examples/organization.settlement.json
 ```
 
-Configure webhook delivery:
+Configure one or more webhook endpoints. Deliveries, retries, and signing secrets are independent. Save the secret returned when each endpoint is created; it is used to verify `X-Yolfi-Signature` and is not returned by list operations:
 
 ```bash
-yolfi webhooks:configure \
+yolfi webhooks:add \
+  --name "Application" \
   --url https://example.com/api/yolfi/webhook \
-  --adapter STRIPE
+  --adapter NONE
+
+yolfi webhooks:add \
+  --name "Talivia analytics" \
+  --url https://talivia.example/api/payments/yolfi/<websiteId>/webhook \
+  --adapter NONE
+
+yolfi webhooks:list
 ```
+
+Use `webhooks:update --id <endpointId> --json endpoint.json` to edit or enable/disable an endpoint. `webhooks:remove` requires `--confirm`; endpoints with delivery history are disabled rather than deleting their audit relationship.
 
 List existing paylinks before creating duplicates:
 
@@ -154,6 +164,13 @@ Besides the required `paylinkId`, `network`, and `symbol`, the invoice body acce
 `customerEmail`, `clientReferenceId` (your internal customer/order reference, returned as
 `customer.clientReferenceId` in webhooks), `customerName`, `customerPhone`, `customerDateOfBirth`,
 `customerAddress`, `subscriptionId`, and `metadata`.
+
+Use a stable customer or application-user id for `clientReferenceId` when webhook handlers must
+resolve subscription ownership. Native (`NONE`) payloads expose it as
+`data.customer.clientReferenceId`; Stripe-compatible Checkout Session payloads use
+`data.object.client_reference_id`, Stripe-compatible Invoice and Subscription payloads use
+`data.object.metadata.client_reference_id`, and Lemon Squeezy-compatible payloads use
+`meta.custom_data.client_reference_id`.
 
 Check payment status:
 
@@ -308,7 +325,7 @@ import { verifyWebhookSignature } from "@yolfi/agent";
 const valid = verifyWebhookSignature(
   rawBody,
   request.headers["x-yolfi-signature"],
-  process.env.YOLFI_API_KEY,
+  process.env.YOLFI_WEBHOOK_SECRET,
 );
 
 if (!valid) {
@@ -359,7 +376,7 @@ The `examples/` folder includes copy-paste workflows and JSON payloads:
 ## Current Limits
 
 - The MCP server currently uses stdio transport.
-- Webhook signing uses the current Yolfi signature contract. If Yolfi separates webhook secrets from organization API keys later, this package will expose the new secret configuration path.
+- Each webhook endpoint has its own signing secret, returned only when the endpoint is created or rotated. Verification requires `--secret` or `YOLFI_WEBHOOK_SECRET`; the organization API key is never used as a signing secret.
 - Agent registration returns the API key once. Agents must store it in an ignored env file, deployment secret, or secret manager.
 - Final payment confirmation should come from verified webhooks and payment status checks, not from UI redirects.
 - MCP directory approval is separate from this package. Do not claim official directory approval until a listing is accepted.

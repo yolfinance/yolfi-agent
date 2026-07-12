@@ -47,6 +47,12 @@ test('destructive MCP tools are clearly marked', () => {
   assert.equal(disableTool.inputSchema.properties.confirm.const, true);
 });
 
+test('organization update does not advertise removed legacy webhook fields', () => {
+  const tool = createMcpCapabilities().tools.find(({ name }) => name === 'yolfi_organization_update');
+
+  assert.deepEqual(Object.keys(tool.inputSchema.properties).sort(), ['email', 'name']);
+});
+
 test('MCP tools expose titles and argument descriptions for registry scanners', () => {
   const capabilities = createMcpCapabilities();
 
