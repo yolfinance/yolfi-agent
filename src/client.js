@@ -1,3 +1,5 @@
+import { validateMetadataFilters } from './metadata-filters.js';
+
 export const DEFAULT_API_BASE_URL = 'https://app.yolfi.com/api';
 export const DEFAULT_PAY_BASE_URL = 'https://pay.yolfi.com';
 
@@ -109,8 +111,8 @@ export class YolfiClient {
     return this.updateOrganization({ settlementAccounts });
   }
 
-  configureWebhooks({ name = 'Webhook', url, adapter = 'NONE', enabled = true }) {
-    return this.createWebhookEndpoint({ name, url, adapter, enabled });
+  configureWebhooks({ name = 'Webhook', url, adapter = 'NONE', enabled = true, metadataFilters }) {
+    return this.createWebhookEndpoint({ name, url, adapter, enabled, metadataFilters });
   }
 
   listWebhookEndpoints() {
@@ -118,6 +120,7 @@ export class YolfiClient {
   }
 
   createWebhookEndpoint(payload) {
+    validateMetadataFilters(payload.metadataFilters);
     return this.request('/private/organization/webhook-endpoints', {
       method: 'POST',
       body: payload,
@@ -125,6 +128,7 @@ export class YolfiClient {
   }
 
   updateWebhookEndpoint(id, payload) {
+    validateMetadataFilters(payload.metadataFilters);
     return this.request(`/private/organization/webhook-endpoints/${encodeURIComponent(id)}`, {
       method: 'PUT',
       body: payload,

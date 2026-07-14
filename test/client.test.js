@@ -88,8 +88,16 @@ test('YolfiClient manages independent webhook endpoints', async () => {
   });
 
   await client.listWebhookEndpoints();
-  await client.createWebhookEndpoint({ name: 'Talivia', url: 'https://talivia.local/webhook', adapter: 'NONE' });
-  await client.updateWebhookEndpoint('endpoint-1', { enabled: false });
+  await client.configureWebhooks({
+    name: 'Talivia',
+    url: 'https://talivia.local/webhook',
+    adapter: 'NONE',
+    metadataFilters: { talivia_website_id: 'website-1' },
+  });
+  await client.updateWebhookEndpoint('endpoint-1', {
+    enabled: false,
+    metadataFilters: { environment: 'production' },
+  });
   await client.rotateWebhookEndpointSecret('endpoint-1');
   await client.deleteWebhookEndpoint('endpoint-1');
 
@@ -100,6 +108,12 @@ test('YolfiClient manages independent webhook endpoints', async () => {
     ['POST', 'https://app.local/api/private/organization/webhook-endpoints/endpoint-1/rotate-secret'],
     ['DELETE', 'https://app.local/api/private/organization/webhook-endpoints/endpoint-1'],
   ]);
+  assert.deepEqual(JSON.parse(calls[1].options.body).metadataFilters, {
+    talivia_website_id: 'website-1',
+  });
+  assert.deepEqual(JSON.parse(calls[2].options.body).metadataFilters, {
+    environment: 'production',
+  });
 });
 
 test('normalizeYolfiError keeps backend code, message, details, and raw response', () => {

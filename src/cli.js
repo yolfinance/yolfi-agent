@@ -3,6 +3,7 @@ import { readFileSync } from 'node:fs';
 import { YolfiApiError, YolfiClient } from './client.js';
 import { verifyWebhookSignature } from './webhooks.js';
 import { startMcpServer } from './mcp.js';
+import { parseMetadataFiltersFlag } from './metadata-filters.js';
 
 const help = `Yolfi Agent CLI
 
@@ -11,7 +12,7 @@ Usage:
   yolfi auth:status
   yolfi organization:update --json organization.json
   yolfi settlement:configure --json settlement.json
-  yolfi webhooks:add --name Analytics --url https://example.com/api/yolfi/webhook --adapter NONE
+  yolfi webhooks:add --name Analytics --url https://example.com/api/yolfi/webhook --adapter NONE --metadata-filters '{"talivia_website_id":"<websiteId>"}'
   yolfi webhooks:list
   yolfi webhooks:update --id <endpointId> --json endpoint.json
   yolfi webhooks:rotate-secret --id <endpointId> --confirm
@@ -126,13 +127,19 @@ async function run(argv = process.argv.slice(2)) {
         name: flags.name || 'Webhook',
         url: flags.url,
         adapter: flags.adapter || 'NONE',
+        metadataFilters: parseMetadataFiltersFlag(flags['metadata-filters']),
       });
       break;
     case 'webhooks:list':
       result = await client.listWebhookEndpoints();
       break;
     case 'webhooks:update':
-      result = await client.updateWebhookEndpoint(flags.id, readJson(flags.json));
+      result = await client.updateWebhookEndpoint(flags.id, {
+        ...readJson(flags.json),
+        ...(flags['metadata-filters'] !== undefined
+          ? { metadataFilters: parseMetadataFiltersFlag(flags['metadata-filters']) }
+          : {}),
+      });
       break;
     case 'webhooks:rotate-secret':
       if (flags.confirm !== true) {

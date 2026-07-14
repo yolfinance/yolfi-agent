@@ -135,12 +135,13 @@ yolfi webhooks:add \
 yolfi webhooks:add \
   --name "Talivia analytics" \
   --url https://talivia.example/api/payments/yolfi/<websiteId>/webhook \
-  --adapter NONE
+  --adapter NONE \
+  --metadata-filters '{"talivia_website_id":"<websiteId>"}'
 
 yolfi webhooks:list
 ```
 
-Use `webhooks:update --id <endpointId> --json endpoint.json` to edit or enable/disable an endpoint. `webhooks:remove` requires `--confirm`; endpoints with delivery history are disabled rather than deleting their audit relationship.
+Endpoint create and update payloads accept optional flat `metadataFilters` string maps (at most 10 entries; keys at most 100 characters; values at most 255 characters); deliveries must match every configured key/value. The CLI accepts these as validated JSON through `--metadata-filters`. Use `webhooks:update --id <endpointId> --json endpoint.json` (optionally with `--metadata-filters '{"key":"value"}'`) to edit or enable/disable an endpoint. `webhooks:remove` requires `--confirm`; endpoints with delivery history are disabled rather than deleting their audit relationship.
 
 List existing paylinks before creating duplicates:
 

@@ -53,6 +53,28 @@ test('organization update does not advertise removed legacy webhook fields', () 
   assert.deepEqual(Object.keys(tool.inputSchema.properties).sort(), ['email', 'name']);
 });
 
+test('webhook MCP tools expose and forward flat metadata filters', async () => {
+  const capabilities = createMcpCapabilities();
+  for (const name of ['yolfi_webhooks_configure', 'yolfi_webhooks_update']) {
+    const schema = capabilities.tools.find(tool => tool.name === name).inputSchema.properties.metadataFilters;
+    assert.equal(schema.type, 'object');
+    assert.deepEqual(schema.additionalProperties, { type: 'string', maxLength: 255 });
+    assert.equal(schema.maxProperties, 10);
+    assert.equal(schema.propertyNames.maxLength, 100);
+  }
+
+  const calls = [];
+  const client = {
+    configureWebhooks: async payload => calls.push(['create', payload]),
+    updateWebhookEndpoint: async (id, payload) => calls.push(['update', id, payload]),
+  };
+  const metadataFilters = { talivia_website_id: 'website-1' };
+  await callMcpTool('yolfi_webhooks_configure', { url: 'https://talivia.test/webhook', metadataFilters }, { client });
+  await callMcpTool('yolfi_webhooks_update', { id: 'endpoint-1', metadataFilters }, { client });
+  assert.deepEqual(calls[0][1].metadataFilters, metadataFilters);
+  assert.deepEqual(calls[1][2].metadataFilters, metadataFilters);
+});
+
 test('MCP tools expose titles and argument descriptions for registry scanners', () => {
   const capabilities = createMcpCapabilities();
 

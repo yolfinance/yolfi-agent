@@ -11,6 +11,13 @@ const SERVER_NAME = 'yolfi-agent-kit';
 const SERVER_TITLE = 'Yolfi Payments MCP';
 const SERVER_VERSION = '0.1.4';
 const WEBHOOK_ADAPTERS = ['NONE', 'STRIPE', 'LEMON_SQUEEZY'];
+const METADATA_FILTERS_SCHEMA = {
+  type: 'object',
+  description: 'Optional flat key/value metadata filters. A delivery must match every configured string value.',
+  maxProperties: 10,
+  propertyNames: { maxLength: 100 },
+  additionalProperties: { type: 'string', maxLength: 255 },
+};
 
 const OUTPUT_SCHEMA = {
   type: 'object',
@@ -118,6 +125,7 @@ const tools = [
       name: { type: 'string', description: 'Endpoint display name, for example Merchant or Talivia analytics.' },
       url: { type: 'string', description: 'HTTPS webhook URL in the target app, for example https://example.com/api/yolfi/webhook.' },
       adapter: { type: 'string', enum: WEBHOOK_ADAPTERS, description: 'Webhook adapter output format. Defaults to NONE if omitted.' },
+      metadataFilters: METADATA_FILTERS_SCHEMA,
     }, ['url']),
   },
   {
@@ -138,6 +146,7 @@ const tools = [
       url: { type: 'string', description: 'HTTPS webhook URL.' },
       adapter: { type: 'string', enum: WEBHOOK_ADAPTERS, description: 'Webhook adapter output format.' },
       enabled: { type: 'boolean', description: 'Whether this endpoint receives new deliveries.' },
+      metadataFilters: METADATA_FILTERS_SCHEMA,
     }, ['id']),
   },
   {

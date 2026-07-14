@@ -31,6 +31,9 @@ Use this when the user asks to add crypto payments, payment links, checkout, sub
 - Create independent endpoints through `POST /api/private/organization/webhook-endpoints`; do not use legacy organization-level `webhookUrl` or `webhookAdapter` fields.
 - Each endpoint has its own signing secret. Save the secret returned at creation because list operations do not return it.
 - `YOLFI_API_KEY` authorizes Yolfi API calls and must never be used to verify webhook signatures. Verify `X-Yolfi-Signature` with that endpoint's signing secret only.
+- Endpoint create/update accepts optional flat `metadataFilters` string maps (at most 10 entries; keys at most 100 characters; values at most 255 characters); a delivery must match every configured key/value.
+- For Talivia automatic provisioning, the user gives Talivia `YOLFI_API_KEY`. Talivia uses it only to authorize Yolfi endpoint API calls; Yolfi generates the endpoint signing secret, and Talivia stores that secret separately for verification.
+- Provision Talivia analytics with adapter `NONE` and `metadataFilters: { "talivia_website_id": "<websiteId>" }`.
 
 ## Do Not
 
