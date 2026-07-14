@@ -68,7 +68,7 @@ test('webhook MCP tools expose and forward flat metadata filters', async () => {
     configureWebhooks: async payload => calls.push(['create', payload]),
     updateWebhookEndpoint: async (id, payload) => calls.push(['update', id, payload]),
   };
-  const metadataFilters = { talivia_website_id: 'website-1' };
+  const metadataFilters = { website_id: 'website-1' };
   await callMcpTool('yolfi_webhooks_configure', { url: 'https://talivia.test/webhook', metadataFilters }, { client });
   await callMcpTool('yolfi_webhooks_update', { id: 'endpoint-1', metadataFilters }, { client });
   assert.deepEqual(calls[0][1].metadataFilters, metadataFilters);

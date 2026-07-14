@@ -92,11 +92,11 @@ test('YolfiClient manages independent webhook endpoints', async () => {
     name: 'Talivia',
     url: 'https://talivia.local/webhook',
     adapter: 'NONE',
-    metadataFilters: { talivia_website_id: 'website-1' },
+    metadataFilters: { website_id: 'website-1' },
   });
   await client.updateWebhookEndpoint('endpoint-1', {
     enabled: false,
-    metadataFilters: { environment: 'production' },
+    metadataFilters: { website_id: 'website-1' },
   });
   await client.rotateWebhookEndpointSecret('endpoint-1');
   await client.deleteWebhookEndpoint('endpoint-1');
@@ -109,10 +109,10 @@ test('YolfiClient manages independent webhook endpoints', async () => {
     ['DELETE', 'https://app.local/api/private/organization/webhook-endpoints/endpoint-1'],
   ]);
   assert.deepEqual(JSON.parse(calls[1].options.body).metadataFilters, {
-    talivia_website_id: 'website-1',
+    website_id: 'website-1',
   });
   assert.deepEqual(JSON.parse(calls[2].options.body).metadataFilters, {
-    environment: 'production',
+    website_id: 'website-1',
   });
 });
 

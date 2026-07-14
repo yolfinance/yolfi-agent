@@ -3,8 +3,8 @@ import test from 'node:test';
 import { parseMetadataFiltersFlag } from '../src/metadata-filters.js';
 
 test('metadata filters flag accepts a flat JSON object of string values', () => {
-  assert.deepEqual(parseMetadataFiltersFlag('{"talivia_website_id":"website-1"}'), {
-    talivia_website_id: 'website-1',
+  assert.deepEqual(parseMetadataFiltersFlag('{"website_id":"website-1"}'), {
+    website_id: 'website-1',
   });
   assert.equal(parseMetadataFiltersFlag(undefined), undefined);
 });

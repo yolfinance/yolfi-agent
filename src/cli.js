@@ -12,7 +12,7 @@ Usage:
   yolfi auth:status
   yolfi organization:update --json organization.json
   yolfi settlement:configure --json settlement.json
-  yolfi webhooks:add --name Analytics --url https://example.com/api/yolfi/webhook --adapter NONE --metadata-filters '{"talivia_website_id":"<websiteId>"}'
+  yolfi webhooks:add --name Analytics --url https://example.com/api/yolfi/webhook --adapter NONE --metadata-filters '{"website_id":"<websiteId>"}'
   yolfi webhooks:list
   yolfi webhooks:update --id <endpointId> --json endpoint.json
   yolfi webhooks:rotate-secret --id <endpointId> --confirm
