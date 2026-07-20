@@ -88,7 +88,7 @@ node packages/yolfi-agent/src/cli.js help
 
 ## Autenticación
 
-Los comandos privados usan una clave API de organización de Yolfi:
+Los comandos privados usan una clave API explícita de Yolfi o la credencial del agente guardada localmente de forma protegida:
 
 ```bash
 export YOLFI_API_KEY="yolfi_..."
@@ -96,17 +96,18 @@ export YOLFI_API_KEY="yolfi_..."
 
 La CLI y el servidor MCP usan por defecto la API y el checkout de producción de Yolfi.
 
-Si la aplicación de destino aún no tiene `YOLFI_API_KEY`, un agente puede registrar un espacio de trabajo mediante el endpoint de registro para agentes:
+Para un usuario nuevo, el agente puede iniciar un registro confirmado por correo después de validar el correo y el nombre del proyecto:
 
 ```bash
 yolfi auth:agent-register \
+  --email "owner@example.com" \
   --project-name "Space Shop" \
   --agent-name "Codex" \
   --integration-intent accept_payments \
   --ref npm
 ```
 
-La clave API devuelta se muestra una sola vez. Guárdala en un archivo env ignorado, un secreto de despliegue o un gestor de secretos. No imprimas la clave completa en logs, no la subas a git y no la escribas en archivos README del proyecto de destino.
+El correo debe ser nuevo; las cuentas existentes usan OAuth o la configuración en el navegador. La primera llamada envía un enlace de confirmación y guarda de forma protegida el token de check-in pendiente. Después de que el propietario abra el enlace, ejecuta de nuevo el mismo comando. Solo entonces el paquete guarda localmente la credencial de agente de un solo uso y elimina la clave completa de la salida de la CLI y MCP.
 
 ## Inicio Rápido
 
@@ -178,7 +179,7 @@ Yolfi Agent Kit incluye un servidor MCP por stdio en el mismo paquete npm:
 }
 ```
 
-`yolfi_agent_register` llama al endpoint público de registro para agentes y no requiere `YOLFI_API_KEY`. Las herramientas privadas `yolfi-api` requieren la clave API devuelta por el registro. Los recursos `yolfi-knowledge` ayudan al agente a entender el camino de integración antes de que exista una clave.
+`yolfi_agent_register` llama al endpoint público de registro para agentes y no requiere `YOLFI_API_KEY`. Después de abrir el enlace de confirmación, llama otra vez a la misma herramienta; entonces guarda localmente la clave API entregada una sola vez. Las herramientas privadas `yolfi-api` requieren esa clave. Los recursos `yolfi-knowledge` ayudan al agente a entender el camino de integración antes de que exista una clave.
 
 Herramientas MCP disponibles:
 
@@ -195,6 +196,8 @@ Herramientas MCP disponibles:
 - `yolfi_payments_create`
 - `yolfi_payments_status`
 - `yolfi_webhooks_verify`
+
+Al crear un endpoint webhook o rotar su secreto, la CLI guarda el secreto de firma entregado una sola vez en la configuración local protegida de Yolfi y nunca lo devuelve en texto plano en la salida de la CLI ni de MCP. Pasa `endpointId` a `yolfi_webhooks_verify` para usar ese secreto guardado. En entornos de CI o con gestor de secretos puede proporcionarse en su lugar un `YOLFI_WEBHOOK_SECRET` administrado explícitamente.
 
 Las herramientas destructivas como `yolfi_paylinks_disable` solo deben ejecutarse después de confirmación explícita del usuario.
 
@@ -228,7 +231,7 @@ Los agentes deberían guardar el ID devuelto del enlace de pago en env/config de
 ## Comandos
 
 ```bash
-yolfi auth:agent-register --project-name "App" --agent-name "Codex" --integration-intent accept_payments
+yolfi auth:agent-register --email "owner@example.com" --project-name "App" --agent-name "Codex" --integration-intent accept_payments
 yolfi auth:status
 yolfi organization:update --json organization.json
 yolfi settlement:configure --json settlement.json
@@ -251,7 +254,8 @@ Yolfi Agent Kit no crea una segunda API `/api/agent/*`. Asigna acciones del agen
 | --- | --- | --- |
 | Registrar espacio de trabajo Yolfi | `POST /api/auth/agent/register` | public; no requiere clave API |
 | Comprobar cuenta | `GET /api/private/organization/current` | bearer API key |
-| Configurar organización, webhook y billeteras de liquidación | `PUT /api/private/organization/current` | bearer API key |
+| Configurar organización y billeteras de liquidación | `PUT /api/private/organization/current` | bearer API key |
+| Crear endpoint de webhook | `POST /api/private/organization/webhook-endpoints` | bearer API key |
 | Obtener estado de clave API | `GET /api/private/organization/api-key` | bearer API key o cookie |
 | Crear enlace de pago | `POST /api/private/paylinks/create` | bearer API key |
 | Listar enlaces de pago | `GET /api/private/paylinks` | bearer API key |
@@ -352,8 +356,8 @@ La carpeta `examples/` incluye procesos listos para copiar y payloads JSON:
 ## Límites Actuales
 
 - El servidor MCP usa actualmente transporte stdio.
-- La firma de webhooks usa el contrato actual de firmas de Yolfi. Si Yolfi separa más adelante los secretos de webhook de las claves API de organización, este paquete expondrá el nuevo camino de configuración.
-- El registro de agente devuelve la clave API una sola vez. Los agentes deben guardarla en un archivo env ignorado, un secreto de despliegue o un gestor de secretos.
+- Las firmas de webhook usan el secreto protegido de cada endpoint; la clave API de la organización no se usa como secreto de firma.
+- El registro de agente devuelve la clave API una sola vez durante el check-in confirmado; el paquete local la guarda de forma protegida y la elimina de la salida.
 - La confirmación final del pago debe venir de webhooks verificados y comprobaciones de estado, no de redirecciones de interfaz.
 - La aprobación en directorios MCP es independiente de este paquete. No afirmes aprobación oficial de un directorio hasta que el listing sea aceptado.
 

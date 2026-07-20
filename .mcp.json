@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "yolfi": {
+      "command": "node",
+      "args": ["${CLAUDE_PLUGIN_ROOT}/src/cli.js", "mcp"]
+    }
+  }
+}

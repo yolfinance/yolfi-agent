@@ -8,12 +8,25 @@
     "url": "https://github.com/yolfinance/yolfi-agent",
     "source": "github"
   },
-  "version": "0.1.4",
+  "version": "0.2.0",
+  "icons": [
+    {
+      "src": "https://app.yolfi.com/favicon.ico",
+      "mimeType": "image/x-icon",
+      "sizes": ["16x16", "24x24", "32x32", "64x64"]
+    }
+  ],
+  "remotes": [
+    {
+      "type": "streamable-http",
+      "url": "https://app.yolfi.com/mcp"
+    }
+  ],
   "packages": [
     {
       "registryType": "npm",
       "identifier": "@yolfi/agent",
-      "version": "0.1.4",
+      "version": "0.2.0",
       "runtimeHint": "npx",
       "packageArguments": [
         {
@@ -27,7 +40,14 @@
       "environmentVariables": [
         {
           "name": "YOLFI_API_KEY",
-          "description": "Optional at server startup. Required after registration for private API tools that read or mutate organization, webhook, settlement, paylink, or transaction data. Public agent registration works without it.",
+          "description": "Optional. Explicit environment credentials take precedence over the protected credential stored by yolfi setup/checkin. Private API tools require one of these credentials.",
+          "format": "string",
+          "isRequired": false,
+          "isSecret": true
+        },
+        {
+          "name": "YOLFI_WEBHOOK_SECRET",
+          "description": "Optional override for webhook verification in CI or deployed environments. Local create/rotate tools otherwise use endpoint-specific secrets from the protected Yolfi config.",
           "format": "string",
           "isRequired": false,
           "isSecret": true

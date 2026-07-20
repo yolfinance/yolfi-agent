@@ -1,6 +1,6 @@
 {
   "name": "@yolfi/agent",
-  "version": "0.1.4",
+  "version": "0.2.0",
   "description": "AI agent payment integration SDK, CLI, and MCP server for adding Yolfi crypto checkout, payment links, webhooks, and payment status checks.",
   "type": "module",
   "mcpName": "io.github.yolfinance/yolfi-agent",
@@ -21,8 +21,12 @@
   },
   "files": [
     ".dockerignore",
+    ".mcp.json",
+    ".codex-plugin",
+    ".claude-plugin",
     "Dockerfile",
     "src",
+    "skills",
     "examples",
     "assets",
     "docs",
@@ -61,6 +65,7 @@
     "donations",
     "codex",
     "claude-code",
+    "chatgpt",
     "cursor",
     "openclaw"
   ],

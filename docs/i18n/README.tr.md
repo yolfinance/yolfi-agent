@@ -88,7 +88,7 @@ node packages/yolfi-agent/src/cli.js help
 
 ## Kimlik Doğrulama
 
-Özel komutlar Yolfi organizasyon API anahtarı kullanır:
+Özel komutlar açıkça verilen Yolfi API anahtarını veya bu cihazda güvenli biçimde saklanan aracı kimlik bilgisini kullanır:
 
 ```bash
 export YOLFI_API_KEY="yolfi_..."
@@ -96,17 +96,18 @@ export YOLFI_API_KEY="yolfi_..."
 
 CLI ve MCP sunucusu varsayılan olarak Yolfi'nin production API'sini ve ödeme sayfasını kullanır.
 
-Hedef uygulamada henüz `YOLFI_API_KEY` yoksa ajan, ajan kayıt endpointi üzerinden çalışma alanı kaydedebilir:
+Yeni bir kullanıcı için aracı, e-posta ve proje adı onaylandıktan sonra e-posta doğrulamalı kaydı başlatabilir:
 
 ```bash
 yolfi auth:agent-register \
+  --email "owner@example.com" \
   --project-name "Space Shop" \
   --agent-name "Codex" \
   --integration-intent accept_payments \
   --ref npm
 ```
 
-Dönen API anahtarı bir kez gösterilir. Anahtarı yok sayılan bir env dosyasında, dağıtım sırrında veya sır yöneticisinde saklayın. Tam anahtarı loglara yazdırmayın, commit etmeyin ve hedef projenin README dosyalarına yazmayın.
+E-posta yeni olmalıdır; mevcut hesaplar OAuth veya tarayıcı kurulumunu kullanır. İlk çağrı bir onay bağlantısı gönderir ve bekleyen check-in tokenını korumalı yerel ayarlarda saklar. Hesap sahibi bağlantıyı açtıktan sonra aynı komutu yeniden çalıştırın. Paket ancak o zaman bir kez teslim edilen aracı kimlik bilgisini saklar ve tam anahtarı CLI ile MCP çıktısından kaldırır.
 
 ## Hızlı Başlangıç
 
@@ -178,7 +179,7 @@ Yolfi Agent Kit aynı npm paketinde stdio MCP sunucusu içerir:
 }
 ```
 
-`yolfi_agent_register` herkese açık ajan kayıt endpointini çağırır ve `YOLFI_API_KEY` gerektirmez. Özel `yolfi-api` araçları, kayıt sonrasında dönen API anahtarını gerektirir. `yolfi-knowledge` kaynakları, anahtar yokken ajanın entegrasyon yolunu anlamasına yardım eder.
+`yolfi_agent_register` herkese açık ajan kayıt endpointini çağırır ve `YOLFI_API_KEY` gerektirmez. Onay bağlantısını açtıktan sonra aynı aracı yeniden çağırın; bir kez teslim edilen API anahtarını yerel olarak saklar. Özel `yolfi-api` araçları bu anahtarı gerektirir. `yolfi-knowledge` kaynakları, anahtar yokken ajanın entegrasyon yolunu anlamasına yardım eder.
 
 Kullanılabilir MCP araçları:
 
@@ -195,6 +196,8 @@ Kullanılabilir MCP araçları:
 - `yolfi_payments_create`
 - `yolfi_payments_status`
 - `yolfi_webhooks_verify`
+
+Webhook endpoint’i oluşturulduğunda veya sırrı yenilendiğinde CLI, bir kez teslim edilen imzalama gizli anahtarını korumalı yerel Yolfi yapılandırmasına kaydeder ve CLI ya da MCP çıktısında düz metin olarak hiçbir zaman döndürmez. Kaydedilen gizli anahtarı kullanmak için `endpointId` değerini `yolfi_webhooks_verify` aracına iletin. CI veya gizli anahtar yöneticisi ortamlarında bunun yerine açıkça yönetilen bir `YOLFI_WEBHOOK_SECRET` sağlanabilir.
 
 `yolfi_paylinks_disable` gibi yıkıcı araçlar yalnızca kullanıcının açık onayından sonra çalıştırılmalıdır.
 
@@ -228,7 +231,7 @@ Ajanlar dönen ödeme linki ID'sini hedef uygulamanın env/config dosyasında tu
 ## Komutlar
 
 ```bash
-yolfi auth:agent-register --project-name "App" --agent-name "Codex" --integration-intent accept_payments
+yolfi auth:agent-register --email "owner@example.com" --project-name "App" --agent-name "Codex" --integration-intent accept_payments
 yolfi auth:status
 yolfi organization:update --json organization.json
 yolfi settlement:configure --json settlement.json
@@ -251,7 +254,8 @@ Yolfi Agent Kit ikinci bir `/api/agent/*` API oluşturmaz. Ajan eylemlerini mevc
 | --- | --- | --- |
 | Yolfi çalışma alanı kaydet | `POST /api/auth/agent/register` | public; API anahtarı gerekmez |
 | Hesabı kontrol et | `GET /api/private/organization/current` | bearer API key |
-| Organizasyon, webhook, ödeme aktarımı cüzdanlarını yapılandır | `PUT /api/private/organization/current` | bearer API key |
+| Organizasyonu ve ödeme aktarımı cüzdanlarını yapılandır | `PUT /api/private/organization/current` | bearer API key |
+| Webhook endpoint’i oluştur | `POST /api/private/organization/webhook-endpoints` | bearer API key |
 | API anahtarı durumunu al | `GET /api/private/organization/api-key` | bearer API key veya cookie |
 | Ödeme linki oluştur | `POST /api/private/paylinks/create` | bearer API key |
 | Ödeme linklerini listele | `GET /api/private/paylinks` | bearer API key |
@@ -352,8 +356,8 @@ auth:status -> organization:get -> paylinks:list -> kullanıcı onayı -> settle
 ## Mevcut Sınırlar
 
 - MCP sunucusu şu anda stdio transport kullanır.
-- Webhook imzalama mevcut Yolfi imza sözleşmesini kullanır. Yolfi ileride webhook sırlarını organizasyon API anahtarlarından ayırırsa bu paket yeni sır yapılandırma yolunu sunar.
-- Ajan kaydı API anahtarını bir kez döndürür. Ajanlar bunu yok sayılan env dosyasında, dağıtım sırrında veya sır yöneticisinde saklamalıdır.
+- Webhook imzaları her endpoint’in korumalı gizli anahtarını kullanır; organizasyon API anahtarı imzalama gizli anahtarı olarak kullanılmaz.
+- Ajan kaydı API anahtarını onaylanmış check-in sırasında yalnızca bir kez döndürür; yerel paket anahtarı korumalı biçimde saklar ve çıktıdan kaldırır.
 - Nihai ödeme onayı, arayüz yönlendirmelerinden değil doğrulanmış webhooklardan ve ödeme durumu kontrollerinden gelmelidir.
 - MCP dizin onayı bu paketten ayrıdır. Bir listing kabul edilmeden resmi dizin onayı iddia etmeyin.
 

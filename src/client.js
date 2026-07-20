@@ -1,4 +1,6 @@
+import { randomUUID } from 'node:crypto';
 import { validateMetadataFilters } from './metadata-filters.js';
+import { readStoredCredential } from './config.js';
 
 export const DEFAULT_API_BASE_URL = 'https://app.yolfi.com/api';
 export const DEFAULT_PAY_BASE_URL = 'https://pay.yolfi.com';
@@ -33,11 +35,18 @@ function requireFetch(fetcher) {
   return resolved;
 }
 
+export function createIdempotencyKey(value) {
+  const key = String(value || randomUUID()).trim();
+  if (key.length < 16 || key.length > 200) {
+    throw new Error('Idempotency key must be between 16 and 200 characters');
+  }
+  return key;
+}
+
 export class YolfiClient {
   constructor(options = {}) {
-    this.apiKey = options.apiKey ?? process.env.YOLFI_API_KEY ?? '';
-    this.apiBaseUrl =
-      options.apiBaseUrl ?? process.env.YOLFI_API_BASE_URL ?? DEFAULT_API_BASE_URL;
+    this.apiKey = options.apiKey || process.env.YOLFI_API_KEY || readStoredCredential().apiKey || '';
+    this.apiBaseUrl = options.apiBaseUrl ?? DEFAULT_API_BASE_URL;
     this.payBaseUrl =
       options.payBaseUrl ?? process.env.YOLFI_PAY_BASE_URL ?? DEFAULT_PAY_BASE_URL;
     this.fetcher = requireFetch(options.fetcher);
@@ -53,6 +62,7 @@ export class YolfiClient {
     const headers = {
       Accept: 'application/json',
       ...(options.body !== undefined ? { 'Content-Type': 'application/json' } : {}),
+      ...(options.headers || {}),
     };
 
     if (auth) {
@@ -74,11 +84,12 @@ export class YolfiClient {
       ...(options.body !== undefined ? { body: JSON.stringify(options.body) } : {}),
     });
 
-    let payload;
+    const responseText = await response.text();
+    let payload = {};
     try {
-      payload = await response.json();
+      payload = responseText ? JSON.parse(responseText) : {};
     } catch {
-      payload = { message: await response.text() };
+      payload = { message: responseText };
     }
 
     if (!response.ok || payload?.success === false) {
@@ -88,10 +99,20 @@ export class YolfiClient {
     return payload;
   }
 
-  registerAgent(payload) {
+  registerAgent(payload, options = {}) {
+    const idempotencyKey = createIdempotencyKey(options.idempotencyKey);
     return this.request('/auth/agent/register', {
       method: 'POST',
       body: payload,
+      auth: false,
+      headers: { 'Idempotency-Key': idempotencyKey },
+    });
+  }
+
+  checkinAgentRegistration(checkinToken) {
+    return this.request('/agent/setup/checkin', {
+      method: 'POST',
+      body: { checkinToken },
       auth: false,
     });
   }

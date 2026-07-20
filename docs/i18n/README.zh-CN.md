@@ -88,7 +88,7 @@ node packages/yolfi-agent/src/cli.js help
 
 ## 认证
 
-私有命令使用 Yolfi 组织 API 密钥：
+私有命令使用显式提供的 Yolfi API 密钥，或安全保存在本机的智能体凭证：
 
 ```bash
 export YOLFI_API_KEY="yolfi_..."
@@ -96,17 +96,18 @@ export YOLFI_API_KEY="yolfi_..."
 
 CLI 和 MCP 服务器默认使用 Yolfi 的生产 API 和支付页面。
 
-如果目标应用还没有 `YOLFI_API_KEY`，代理可以通过代理注册接口注册工作区：
+对于新用户，智能体可在用户确认电子邮件和项目名称后启动需要邮件确认的注册流程：
 
 ```bash
 yolfi auth:agent-register \
+  --email "owner@example.com" \
   --project-name "Space Shop" \
   --agent-name "Codex" \
   --integration-intent accept_payments \
   --ref npm
 ```
 
-返回的 API 密钥只显示一次。请把它存放在被忽略的 env 文件、部署密钥或密钥管理器中。不要在日志中打印完整密钥，不要提交到 git，也不要写入目标项目的 README。
+该电子邮件必须尚未注册；已有账户应使用 OAuth 或浏览器设置。第一次调用会发送确认链接，并在本机受保护的配置中保存待处理的 check-in token。账户所有者打开链接后，请再次运行完全相同的命令。此时软件包才会保存仅交付一次的智能体凭证，并从 CLI 和 MCP 输出中移除完整密钥。
 
 ## 快速开始
 
@@ -178,7 +179,7 @@ Yolfi Agent Kit 在同一个 npm 包中包含 stdio MCP 服务器：
 }
 ```
 
-`yolfi_agent_register` 调用公开的代理注册接口，不需要 `YOLFI_API_KEY`。私有 `yolfi-api` 工具需要注册后返回的 API 密钥。`yolfi-knowledge` 资源可以在还没有密钥时帮助代理理解集成路径。
+`yolfi_agent_register` 调用公开的代理注册接口，不需要 `YOLFI_API_KEY`。打开确认链接后，再次调用同一工具；它会在本机保存仅交付一次的 API 密钥。私有 `yolfi-api` 工具需要此密钥。`yolfi-knowledge` 资源可以在还没有密钥时帮助代理理解集成路径。
 
 可用 MCP 工具：
 
@@ -195,6 +196,8 @@ Yolfi Agent Kit 在同一个 npm 包中包含 stdio MCP 服务器：
 - `yolfi_payments_create`
 - `yolfi_payments_status`
 - `yolfi_webhooks_verify`
+
+创建 Webhook 端点或轮换密钥时，CLI 会将仅交付一次的签名密钥保存到受保护的本地 Yolfi 配置中，绝不会在 CLI 或 MCP 输出中以明文返回。要使用已保存的密钥，请将 `endpointId` 传给 `yolfi_webhooks_verify`。在 CI 或密钥管理器环境中，可以改为显式提供受管理的 `YOLFI_WEBHOOK_SECRET`。
 
 像 `yolfi_paylinks_disable` 这样的破坏性工具只能在用户明确确认后运行。
 
@@ -228,7 +231,7 @@ yolfi paylinks:create --json ./paylink.json
 ## 命令
 
 ```bash
-yolfi auth:agent-register --project-name "App" --agent-name "Codex" --integration-intent accept_payments
+yolfi auth:agent-register --email "owner@example.com" --project-name "App" --agent-name "Codex" --integration-intent accept_payments
 yolfi auth:status
 yolfi organization:update --json organization.json
 yolfi settlement:configure --json settlement.json
@@ -251,7 +254,8 @@ Yolfi Agent Kit 不会创建第二套 `/api/agent/*` API。它把代理动作映
 | --- | --- | --- |
 | 注册 Yolfi 工作区 | `POST /api/auth/agent/register` | public；无需 API 密钥 |
 | 检查账户 | `GET /api/private/organization/current` | bearer API key |
-| 配置组织、Webhook、结算钱包 | `PUT /api/private/organization/current` | bearer API key |
+| 配置组织和结算钱包 | `PUT /api/private/organization/current` | bearer API key |
+| 创建 Webhook 端点 | `POST /api/private/organization/webhook-endpoints` | bearer API key |
 | 获取 API 密钥状态 | `GET /api/private/organization/api-key` | bearer API key 或 cookie |
 | 创建支付链接 | `POST /api/private/paylinks/create` | bearer API key |
 | 列出支付链接 | `GET /api/private/paylinks` | bearer API key |
@@ -352,8 +356,8 @@ auth:status -> organization:get -> paylinks:list -> 用户确认 -> settlement:c
 ## 当前限制
 
 - MCP 服务器目前使用 stdio 传输。
-- 每个 Webhook endpoint 都有独立的签名密钥，该密钥仅在创建 endpoint 或轮换时返回。验证时请使用 `--secret` 或 `YOLFI_WEBHOOK_SECRET`；组织 API 密钥不会用于签名。
-- 代理注册只返回一次 API 密钥。代理必须把它存放在被忽略的 env 文件、部署密钥或密钥管理器中。
+- Webhook 签名使用各端点受保护的密钥；组织 API 密钥不会用作签名密钥。
+- 代理注册只会在已确认的 check-in 中返回一次 API 密钥；本地软件包会安全保存该密钥并将其从输出中移除。
 - 最终支付确认应来自已验证的 Webhook 和支付状态检查，而不是界面跳转。
 - MCP 目录审核独立于此包。不要在 listing 被接受前声称已获得官方目录批准。
 

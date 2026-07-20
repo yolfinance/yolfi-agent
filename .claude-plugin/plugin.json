@@ -1,0 +1,13 @@
+{
+  "name": "yolfi-agent-kit",
+  "version": "0.2.0",
+  "description": "Yolfi crypto payment integration skill and bundled local MCP server for Claude Code.",
+  "author": {
+    "name": "Yolfi",
+    "url": "https://yolfi.com"
+  },
+  "homepage": "https://yolfi.com/ai-agent-kit",
+  "repository": "https://github.com/yolfinance/yolfi-agent",
+  "license": "MIT",
+  "keywords": ["payments", "crypto", "stablecoins", "mcp", "checkout", "webhooks"]
+}

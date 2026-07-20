@@ -1,0 +1,38 @@
+{
+  "name": "yolfi-agent",
+  "version": "0.2.0",
+  "description": "Add Yolfi crypto checkout, paylinks, webhooks, and payment verification with browser-based agent authorization.",
+  "author": {
+    "name": "Yolfi",
+    "url": "https://yolfi.com"
+  },
+  "homepage": "https://yolfi.com/ai-agent-kit",
+  "repository": "https://github.com/yolfinance/yolfi-agent",
+  "license": "MIT",
+  "keywords": ["payments", "crypto", "stablecoins", "mcp", "checkout", "webhooks"],
+  "skills": "./skills/",
+  "mcpServers": {
+    "yolfi": {
+      "command": "node",
+      "args": ["./src/cli.js", "mcp"],
+      "cwd": "."
+    }
+  },
+  "interface": {
+    "displayName": "Yolfi Agent Kit",
+    "shortDescription": "Build and operate Yolfi crypto payment flows.",
+    "longDescription": "Authorize an AI agent with Yolfi, then create paylinks, configure settlement wallets and signed webhooks, and verify payment status through MCP tools and a reusable integration skill.",
+    "developerName": "Yolfi",
+    "category": "Payments",
+    "capabilities": ["MCP", "Skills", "Write"],
+    "websiteURL": "https://yolfi.com/ai-agent-kit",
+    "privacyPolicyURL": "https://yolfi.com/privacy-policy",
+    "termsOfServiceURL": "https://yolfi.com/terms-and-conditions",
+    "defaultPrompt": [
+      "Connect this project to Yolfi and implement a production-ready crypto checkout flow.",
+      "Create or reuse a Yolfi paylink and add verified webhook handling to this application.",
+      "Audit this project's Yolfi payment integration and verify the end-to-end payment flow."
+    ],
+    "brandColor": "#0F766E"
+  }
+}

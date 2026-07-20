@@ -4,11 +4,20 @@ import { YolfiApiError, YolfiClient } from './client.js';
 import { verifyWebhookSignature } from './webhooks.js';
 import { startMcpServer } from './mcp.js';
 import { parseMetadataFiltersFlag } from './metadata-filters.js';
+import { checkinAgent, setupAgent } from './setup.js';
+import { registerAgentAccount } from './registration.js';
+import {
+  clearWebhookSigningSecret,
+  readWebhookSigningSecret,
+  storeWebhookSigningSecret,
+} from './config.js';
 
 const help = `Yolfi Agent CLI
 
 Usage:
-  yolfi auth:agent-register --project-name "App" --agent-name "Codex" --integration-intent accept_payments
+  yolfi setup --agent codex
+  yolfi checkin --agent codex
+  yolfi auth:agent-register --email user@example.com --project-name "App" --agent-name "Codex" --integration-intent accept_payments [--idempotency-key <key>]
   yolfi auth:status
   yolfi organization:update --json organization.json
   yolfi settlement:configure --json settlement.json
@@ -23,11 +32,16 @@ Usage:
   yolfi paylinks:disable --id <paylinkId> --confirm
   yolfi payments:create --json payment.json
   yolfi payments:status --id <paymentId>
-  yolfi webhooks:verify --payload payload.json --signature <sig>
+  yolfi webhooks:verify --endpoint-id <endpointId> --payload payload.json --signature <sig>
   yolfi mcp
+
+New-user registration sends a confirmation link first. After opening it, run the
+same auth:agent-register command again to store the one-time agent credential.
 
 Env:
   YOLFI_API_KEY
+  YOLFI_WEBHOOK_SECRET (optional override for webhook verification)
+  YOLFI_CONFIG_HOME (defaults to ~/.yolfi)
 
 Yolfi production API and checkout URLs are used by default.
 `;
@@ -100,15 +114,29 @@ async function run(argv = process.argv.slice(2)) {
   let result;
 
   switch (command) {
-    case 'auth:agent-register':
-      result = await client.registerAgent({
-        agentName: flags['agent-name'],
-        projectName: flags['project-name'],
-        projectUrl: flags['project-url'],
-        integrationIntent: flags['integration-intent'] || 'accept_payments',
-        language: flags.language,
-        ref: flags.ref,
+    case 'setup':
+      result = await setupAgent({ agent: flags.agent });
+      break;
+    case 'checkin':
+      result = await checkinAgent({
+        agent: flags.agent,
+        checkinToken: flags['checkin-token'],
       });
+      break;
+    case 'auth:agent-register':
+      result = await registerAgentAccount(
+        client,
+        {
+          email: flags.email,
+          agentName: flags['agent-name'],
+          projectName: flags['project-name'],
+          projectUrl: flags['project-url'],
+          integrationIntent: flags['integration-intent'] || 'accept_payments',
+          language: flags.language,
+          ref: flags.ref,
+        },
+        { idempotencyKey: flags['idempotency-key'] },
+      );
       break;
     case 'auth:status':
       result = await client.authStatus();
@@ -122,14 +150,16 @@ async function run(argv = process.argv.slice(2)) {
       break;
     }
     case 'webhooks:configure':
-    case 'webhooks:add':
-      result = await client.configureWebhooks({
+    case 'webhooks:add': {
+      const response = await client.configureWebhooks({
         name: flags.name || 'Webhook',
         url: flags.url,
         adapter: flags.adapter || 'NONE',
         metadataFilters: parseMetadataFiltersFlag(flags['metadata-filters']),
       });
+      result = storeWebhookSigningSecret(response);
       break;
+    }
     case 'webhooks:list':
       result = await client.listWebhookEndpoints();
       break;
@@ -145,13 +175,17 @@ async function run(argv = process.argv.slice(2)) {
       if (flags.confirm !== true) {
         throw new Error('webhooks:rotate-secret requires --confirm because the previous secret stops signing new deliveries');
       }
-      result = await client.rotateWebhookEndpointSecret(flags.id);
+      result = storeWebhookSigningSecret(
+        await client.rotateWebhookEndpointSecret(flags.id),
+        flags.id,
+      );
       break;
     case 'webhooks:remove':
       if (flags.confirm !== true) {
         throw new Error('webhooks:remove is destructive; rerun with --confirm after user approval');
       }
       result = await client.deleteWebhookEndpoint(flags.id);
+      clearWebhookSigningSecret(flags.id);
       break;
     case 'paylinks:create':
       result = await client.createPaylink(readJson(flags.json));
@@ -176,9 +210,11 @@ async function run(argv = process.argv.slice(2)) {
       break;
     case 'webhooks:verify': {
       const payload = readPayload(flags);
-      const secret = flags.secret || process.env.YOLFI_WEBHOOK_SECRET || '';
+      const secret = process.env.YOLFI_WEBHOOK_SECRET
+        || readWebhookSigningSecret(flags['endpoint-id'])
+        || '';
       if (!secret) {
-        throw new Error('Webhook signing secret is required; pass --secret or set YOLFI_WEBHOOK_SECRET');
+        throw new Error('Webhook signing secret is required; pass --endpoint-id for a locally stored secret or set YOLFI_WEBHOOK_SECRET');
       }
       result = {
         success: true,
