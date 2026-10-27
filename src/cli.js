@@ -19,6 +19,7 @@ Usage:
   yolfi checkin --agent codex
   yolfi auth:agent-register --email user@example.com --project-name "App" --agent-name "Codex" --integration-intent accept_payments [--idempotency-key <key>]
   yolfi auth:status
+  yolfi organization:get
   yolfi organization:update --json organization.json
   yolfi settlement:configure --json settlement.json
   yolfi webhooks:add --name Analytics --url https://example.com/api/yolfi/webhook --adapter NONE --metadata-filters '{"website_id":"<websiteId>"}'
@@ -30,6 +31,8 @@ Usage:
   yolfi paylinks:list --page 1 --rows 10
   yolfi paylinks:get --id <paylinkId>
   yolfi paylinks:disable --id <paylinkId> --confirm
+  yolfi checkout-sessions:create --json checkout-session.json --idempotency-key <stable-order-key>
+  yolfi checkout-sessions:get --id <checkoutSessionId>
   yolfi payments:create --json payment.json
   yolfi payments:status --id <paymentId>
   yolfi webhooks:verify --endpoint-id <endpointId> --payload payload.json --signature <sig>
@@ -139,6 +142,7 @@ async function run(argv = process.argv.slice(2)) {
       );
       break;
     case 'auth:status':
+    case 'organization:get':
       result = await client.authStatus();
       break;
     case 'organization:update':
@@ -201,6 +205,14 @@ async function run(argv = process.argv.slice(2)) {
         throw new Error('paylinks:disable is destructive; rerun with --confirm after user approval');
       }
       result = await client.disablePaylink(flags.id);
+      break;
+    case 'checkout-sessions:create':
+      result = await client.createCheckoutSession(readJson(flags.json), {
+        idempotencyKey: flags['idempotency-key'],
+      });
+      break;
+    case 'checkout-sessions:get':
+      result = await client.getCheckoutSession(flags.id);
       break;
     case 'payments:create':
       result = await client.createPayment(readJson(flags.json));

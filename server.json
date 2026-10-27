@@ -8,7 +8,7 @@
     "url": "https://github.com/yolfinance/yolfi-agent",
     "source": "github"
   },
-  "version": "0.2.0",
+  "version": "0.2.1",
   "icons": [
     {
       "src": "https://app.yolfi.com/favicon.ico",
@@ -26,7 +26,7 @@
     {
       "registryType": "npm",
       "identifier": "@yolfi/agent",
-      "version": "0.2.0",
+      "version": "0.2.1",
       "runtimeHint": "npx",
       "packageArguments": [
         {

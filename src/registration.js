@@ -91,10 +91,10 @@ function registrationMessage(status, email) {
     return 'Email confirmation completed. Run this registration command or tool again to finish connecting.';
   }
   if (status === 'redeemed' || status === 'already_delivered') {
-    return 'This one-time credential was already delivered. Run yolfi auth:status to verify the stored connection, or start browser setup again.';
+    return 'This one-time credential was already delivered. Run npx -y @yolfi/agent auth:status to verify the stored connection, or start browser setup again.';
   }
   if (status === 'failed') {
-    return 'Registration expired or failed. Use yolfi setup and yolfi checkin to connect the account through browser authorization.';
+    return 'Registration expired or failed. Use npx -y @yolfi/agent setup and npx -y @yolfi/agent checkin to connect the account through browser authorization.';
   }
   return 'Registration is not connected yet. Run this registration command or tool again to check its status.';
 }

@@ -1,6 +1,6 @@
 {
   "name": "@yolfi/agent",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "AI agent payment integration SDK, CLI, and MCP server for adding Yolfi crypto checkout, payment links, webhooks, and payment status checks.",
   "type": "module",
   "mcpName": "io.github.yolfinance/yolfi-agent",
@@ -39,7 +39,7 @@
   "scripts": {
     "check": "npm run lint && npm test",
     "test": "node --test",
-    "lint": "node --check src/*.js"
+    "lint": "node --input-type=module -e \"import { readdirSync } from 'node:fs'; import { execFileSync } from 'node:child_process'; for (const file of readdirSync('src').filter(name => name.endsWith('.js'))) execFileSync(process.execPath, ['--check', 'src/' + file], { stdio: 'inherit' });\""
   },
   "keywords": [
     "yolfi",

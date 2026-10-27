@@ -70,7 +70,7 @@ export class YolfiClient {
         throw new YolfiApiError({
           success: false,
           code: 'YOLFI_API_KEY_MISSING',
-          message: 'YOLFI_API_KEY is required for this command',
+          message: 'Yolfi authorization is missing. Run npx -y @yolfi/agent setup, finish browser authorization, then checkin; or provide YOLFI_API_KEY for a server or CI environment. A remote MCP OAuth connection is verified through that host, not this local CLI.',
           details: undefined,
           raw: null,
         });
@@ -129,7 +129,10 @@ export class YolfiClient {
   }
 
   configureSettlement(settlementAccounts) {
-    return this.updateOrganization({ settlementAccounts });
+    return this.request('/private/organization/settlement-accounts', {
+      method: 'PATCH',
+      body: { settlementAccounts },
+    });
   }
 
   configureWebhooks({ name = 'Webhook', url, adapter = 'NONE', enabled = true, metadataFilters }) {
@@ -203,6 +206,28 @@ export class YolfiClient {
 
   getPublicPaylink(id) {
     return this.request(`/public/paylinks/${encodeURIComponent(id)}`, { auth: false });
+  }
+
+  createCheckoutSession(payload, options = {}) {
+    if (!payload?.paylinkId && !options.idempotencyKey) {
+      throw new Error('A stable idempotencyKey is required for a standalone Checkout Session; reuse it when retrying the same order');
+    }
+    const idempotencyKey = options.idempotencyKey
+      ? createIdempotencyKey(options.idempotencyKey)
+      : undefined;
+    return this.request('/checkout-sessions', {
+      method: 'POST',
+      body: payload,
+      ...(idempotencyKey ? { headers: { 'Idempotency-Key': idempotencyKey } } : {}),
+    });
+  }
+
+  getCheckoutSession(id) {
+    return this.request(`/checkout-sessions/${encodeURIComponent(id)}`);
+  }
+
+  getPublicCheckoutSession(id) {
+    return this.request(`/public/checkout-sessions/${encodeURIComponent(id)}`, { auth: false });
   }
 
   createPayment(payload) {

@@ -1,0 +1,7 @@
+{
+  "amount": "19",
+  "currency": "USD",
+  "merchantOrderId": "your-stable-order-id",
+  "clientReferenceId": "your-stable-customer-id",
+  "description": "Your approved product description"
+}

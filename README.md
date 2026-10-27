@@ -1,249 +1,88 @@
-![Yolfi Agent Kit: AI agent payment integration for crypto checkout, payment links, MCP, CLI, SDK, and webhooks](assets/ai-agent-payment.jpg)
+![Yolfi Agent Kit: AI agent payment integration for crypto checkout](assets/ai-agent-payment.png)
 
-# Yolfi Agent Kit
+# Yolfi Agent Kit: AI Agent Payment Integration
 
 [![npm version](https://img.shields.io/npm/v/@yolfi/agent.svg)](https://www.npmjs.com/package/@yolfi/agent)
-[![license](https://img.shields.io/npm/l/@yolfi/agent.svg)](LICENSE)
+[![MIT license](https://img.shields.io/npm/l/@yolfi/agent.svg)](LICENSE)
 [![Node.js 18+](https://img.shields.io/badge/node-%3E%3D18-0b7f79)](package.json)
-[![Yolfi MCP server](https://glama.ai/mcp/servers/yolfinance/yolfi-agent/badges/card.svg)](https://glama.ai/mcp/servers/yolfinance/yolfi-agent)
-[![Yolfi MCP score](https://glama.ai/mcp/servers/yolfinance/yolfi-agent/badges/score.svg)](https://glama.ai/mcp/servers/yolfinance/yolfi-agent)
 
-AI agent payment integration for crypto checkout. Yolfi Agent Kit is a JSON-first SDK, CLI, Agent Skill, and MCP server that lets AI coding agents add stablecoin checkout, payment links, payment status checks, webhook verification, and webhook-based access logic to applications through Yolfi.
+AI agent payment integration for crypto and stablecoin checkout. `@yolfi/agent` provides a local MCP server, a JSON CLI, a JavaScript SDK, and the Yolfi Payments Agent Skill for payment links, Checkout Sessions, payment status checks, and signed webhooks.
 
-Use `@yolfi/agent` when Codex, Claude Code, Cursor, OpenClaw, an MCP host, or a custom AI agent can build the product but still needs a reliable payment API to register a Yolfi workspace, create a paylink, configure webhooks, and verify crypto payment status without sending the user through manual dashboard setup.
+For AI integration, copy this message to your agent in the project you want to integrate:
 
-[Website](https://yolfi.com) | [Agent Kit](https://yolfi.com/ai-agent-kit) | [Docs](https://docs.yolfi.com/en/agent-kit) | [npm](https://www.npmjs.com/package/@yolfi/agent) | [GitHub](https://github.com/yolfinance/yolfi-agent) | [Glama](https://glama.ai/mcp/servers/yolfinance/yolfi-agent) | [Guide](https://yolfi.com/blog/ai-agent-payment-integration-api)
+```text
+Add Yolfi payments to this project. Follow https://docs.yolfi.com/ai
+```
+
+The agent inspects the project, reuses an existing connection or selects a supported connection method, reads the account settings, and implements the requested integration. The owner completes account authorization and supplies only decisions that are missing, such as a receiving wallet or product price. Connecting the account alone does not finish the integration.
+
+[Website](https://yolfi.com) | [Agent Kit](https://yolfi.com/ai-agent-kit) | [AI guide](https://docs.yolfi.com/en/agent-kit) | [Agent connection reference](https://docs.yolfi.com/en/agent-kit/connections) | [HTTP API](https://docs.yolfi.com/en/api) | [CLI reference](https://docs.yolfi.com/en/cli) | [npm](https://www.npmjs.com/package/@yolfi/agent) | [GitHub](https://github.com/yolfinance/yolfi-agent) | [MCP directory](https://glama.ai/mcp/servers/yolfinance/yolfi-agent)
 
 ## Languages
 
-Read this package guide in:
-[English](README.md),
-[Español](docs/i18n/README.es.md),
-[Deutsch](docs/i18n/README.de.md),
-[Français](docs/i18n/README.fr.md),
-[简体中文](docs/i18n/README.zh-CN.md),
-[Русский](docs/i18n/README.ru.md),
-[हिन्दी](docs/i18n/README.hi.md),
-[Türkçe](docs/i18n/README.tr.md),
-[한국어](docs/i18n/README.ko.md),
-[日本語](docs/i18n/README.ja.md).
+[English](README.md), [Español](docs/i18n/README.es.md), [Deutsch](docs/i18n/README.de.md), [Français](docs/i18n/README.fr.md), [简体中文](docs/i18n/README.zh-CN.md), [Русский](docs/i18n/README.ru.md), [हिन्दी](docs/i18n/README.hi.md), [Türkçe](docs/i18n/README.tr.md), [한국어](docs/i18n/README.ko.md), [日本語](docs/i18n/README.ja.md).
 
-## Why Developers Use It
+## Choose your entry point
 
-- Add AI agent payments to SaaS products, games, marketplaces, donation pages, digital downloads, internal tools, and agent-built apps.
-- Give coding agents a safe payment workflow: inspect the app, authorize or reuse a workspace, ask for wallet and price decisions, create paylinks, install checkout, verify webhooks, and check payment status.
-- Use one package for MCP crypto payments, JSON CLI automation, JavaScript SDK calls, webhook signature verification, and agent-readable instructions.
-- Build with the existing Yolfi API instead of maintaining a second agent-only payment API.
-- Help agents discover Yolfi through npm, GitHub, MCP directories, `llms.txt`, docs, examples, and integration guides.
+- **AI integration:** send the message above. The [agent guide](https://docs.yolfi.com/ai) owns the workflow; [SKILL.md](SKILL.md) provides the packaged instructions.
+- **HTTP API:** use the [API guide](https://docs.yolfi.com/en/api) for authentication, request bodies, checkout, and webhooks.
+- **Terminal automation:** use the commands below and the [CLI reference](https://docs.yolfi.com/en/cli).
+- **JavaScript application:** install the SDK and use the server/runtime guidance below.
 
-Yolfi handles crypto payment infrastructure, hosted checkout, paylinks, public payment invoices, organization settings, settlement wallet configuration, and webhook delivery. Your agent handles project inspection, code changes, user confirmation, and target-app integration.
+## Crypto payment integration features
 
-## What It Can Add To An App
+- Hosted checkout and one-time payment links for SaaS products, digital downloads, credits, games, and donations.
+- Recurring payment links for subscription flows supported by the Yolfi account.
+- Checkout Sessions for server-priced orders with a stable idempotency key for retries.
+- Payment status checks and webhook signature verification for the application's existing access and subscription logic.
+- Organization settings, selected settlement wallets, and independent webhook endpoints through the existing Yolfi API.
 
-- Hosted crypto checkout through Yolfi paylinks.
-- One-time payment links for digital products, credits, files, tools, or game items.
-- Recurring or subscription-style payment link setup when the Yolfi account supports it.
-- Donation and creator-support payment pages.
-- Server routes that create public payment invoices from a paylink.
-- Payment status polling through Yolfi public payment endpoints.
-- Webhook handlers that verify `X-Yolfi-Signature`.
-- Webhook-based entitlement logic that unlocks access only after confirmed payment events.
-- Agent workflows for Codex, Claude Code, Cursor, OpenClaw, and custom automation.
+Use the integration workflow with Codex, Claude Code, Cursor, ChatGPT, Claude, OpenClaw, Hermes, or another agent with a supported MCP connector or local tools. Browser and cloud environments need a supported remote connector when they cannot run commands. See the [connection reference](https://docs.yolfi.com/en/agent-kit/connections) for the available paths in each host.
 
-## Agent Skill
+## CLI installation and authorization
 
-This package includes the **Yolfi Payments Skill** in `SKILL.md`. Use it with coding agents when the user asks to add crypto payments, payment links, checkout, subscriptions, donations, paid downloads, paid access, or webhook-based entitlements.
-
-Recommended safe workflow:
-
-```txt
-inspect app -> setup agent -> browser authorization -> checkin -> auth status -> ask user for wallet and price -> configure organization -> create or reuse paylink -> add checkout -> add webhook verification -> verify status
-```
-
-The skill tells agents what they may do automatically and what they must ask the user to decide. Agents must never invent wallet addresses, prices, plans, currencies, secret storage locations, or destructive paylink actions.
-
-## Install
-
-Install in a project:
-
-```bash
-npm install @yolfi/agent
-```
-
-Or run without installing:
+Node.js 18 or later is required. Run without a global install:
 
 ```bash
 npx -y @yolfi/agent help
-```
-
-Start the stdio MCP server:
-
-```bash
-npx -y @yolfi/agent mcp
-```
-
-For local development inside this repository:
-
-```bash
-node packages/yolfi-agent/src/cli.js help
-```
-
-## Authentication
-
-The preferred local flow opens browser authorization and stores the resulting `yolfi_agent_*` credential in `~/.yolfi/config.json`:
-
-```bash
-npx -y @yolfi/agent setup --agent codex
-# Open the returned loginUrl and finish authentication.
-npx -y @yolfi/agent checkin --agent codex
 npx -y @yolfi/agent auth:status
 ```
 
-The config directory and file are created with `0700` and `0600` permissions where supported. Set `YOLFI_CONFIG_HOME` to override the config directory in isolated development or CI environments.
-
-Explicit credentials still work and take precedence over stored credentials:
+If no local credential exists, start browser authorization:
 
 ```bash
-export YOLFI_API_KEY="yolfi_agent_..."
+npx -y @yolfi/agent setup --agent local-agent
+# Open the returned loginUrl and complete owner authorization.
+npx -y @yolfi/agent checkin --agent local-agent
+npx -y @yolfi/agent auth:status
 ```
 
-The CLI and local MCP server also support email-confirmed signup for a new Yolfi user. The agent must ask the user to confirm the email and project name before registration:
+The agent should open the URL when its environment supports a browser and resume check-in after authorization. Repeated setup reuses an unexpired pending session from the same API environment. Account access must be checked with `auth:status`; this does not verify checkout or live webhook delivery.
+
+Credentials and pending state are saved in `~/.yolfi/config.json` using atomic writes and process locking. Directory and file permissions are `0700` and `0600` where supported. `YOLFI_CONFIG_HOME` selects an isolated configuration directory. Explicit SDK credentials take precedence over `YOLFI_API_KEY`, which takes precedence over the stored local credential. Do not set a placeholder `YOLFI_API_KEY` when using browser authorization.
+
+For an explicitly new account, the agent can use email-confirmed signup after the owner supplies or confirms the email and project name:
 
 ```bash
-export YOLFI_REGISTRATION_IDEMPOTENCY_KEY="76cd8dd3-b92a-42d6-ae2f-bc013752cf30"
-yolfi auth:agent-register \
+npx -y @yolfi/agent auth:agent-register \
   --email "owner@example.com" \
-  --project-name "Space Shop" \
-  --agent-name "Codex" \
-  --integration-intent accept_payments \
-  --ref npm \
-  --idempotency-key "$YOLFI_REGISTRATION_IDEMPOTENCY_KEY"
+  --project-name "My product" \
+  --agent-name "My coding agent" \
+  --integration-intent accept_payments
 ```
 
-The first call creates a pending signup, emails the owner a confirmation link, and stores a protected check-in token locally. After the owner opens that link, run the exact same command again. The second call checks the pending signup, stores the one-time `yolfi_agent_*` credential in the protected local config, and removes the full credential from CLI/MCP output.
+The first call sends a confirmation link. After the owner opens it, the agent repeats the same command. A generated idempotency key and pending check-in token are persisted; an optional `--idempotency-key` must be 16-200 characters and reused on retries. The connected credential is stored without printing it. Existing emails use browser authorization instead. A lost initial signup response is recoverable; if the one-time credential response is lost after redemption, check `auth:status` and start browser authorization again if needed.
 
-This command is signup-only. If the email already has a Yolfi account, use OAuth or local browser setup instead. If the pending signup expires or fails, use `yolfi setup` followed by `yolfi checkin` for the provisioned account rather than trying to register the same email again.
+## MCP server for crypto payments
 
-The CLI generates and persists a UUID when `--idempotency-key` is omitted. It automatically reuses that key and the protected check-in token for the repeated command and after a lost response. A new registration intent may pass a different 16–200 character key. The MCP `yolfi_agent_register` tool follows the same behavior through its optional `idempotencyKey` argument: call it once to send the email and again after confirmation.
+Use an already connected Yolfi server first. Connection selection depends on the tools available in the agent's environment, not just its brand. Full host setup instructions live in the [connection reference](https://docs.yolfi.com/en/agent-kit/connections).
 
-Never print a full API key in logs, commit it, or write it into target-project documentation. See [Agent and MCP setup](docs/agent-setup.md) for host-specific instructions.
+An authenticated MCP connection needs no additional organization API key. Continue through its tools, including Checkout Session creation; skip local CLI setup unless a separate local workflow is actually needed. Local MCP uses its stored browser-setup credential automatically. Application server credentials are a separate concern, described below.
 
-## Quick Start
+- Remote Streamable HTTP: `https://app.yolfi.com/mcp`, with OAuth managed by the MCP host.
+- Local stdio: `npx -y @yolfi/agent mcp`, using the protected local credential.
 
-Check the workspace linked to the API key:
-
-```bash
-yolfi auth:status
-```
-
-Configure settlement wallets after the user provides wallet addresses:
-
-```bash
-yolfi settlement:configure --json examples/organization.settlement.json
-```
-
-Configure one or more webhook endpoints. Deliveries, retries, and signing secrets are independent. The CLI stores each create/rotate secret in the protected local Yolfi config and prints only redacted metadata:
-
-```bash
-yolfi webhooks:add \
-  --name "Application" \
-  --url https://example.com/api/yolfi/webhook \
-  --adapter NONE
-
-yolfi webhooks:add \
-  --name "Analytics endpoint" \
-  --url https://analytics.example/api/payments/yolfi/<websiteId>/webhook \
-  --adapter NONE \
-  --metadata-filters '{"website_id":"<websiteId>"}'
-
-yolfi webhooks:list
-```
-
-Endpoint create and update payloads accept optional flat `metadataFilters` string maps (at most 10 entries; keys at most 100 characters; values at most 255 characters); deliveries must match every configured key/value. Analytics routing uses the single key `website_id`; do not introduce alternative analytics keys. The CLI accepts filters as validated JSON through `--metadata-filters`. Use `webhooks:update --id <endpointId> --json endpoint.json` (optionally with `--metadata-filters '{"website_id":"<websiteId>"}'`) to edit or enable/disable an analytics endpoint. `webhooks:remove` requires `--confirm`; endpoints with delivery history are disabled rather than deleting their audit relationship.
-
-List existing paylinks before creating duplicates:
-
-```bash
-yolfi paylinks:list --page 1 --rows 10
-```
-
-Create a one-time payment link:
-
-```bash
-yolfi paylinks:create --json examples/paylink.one-time.json
-```
-
-Create a public payment invoice from a paylink:
-
-```bash
-yolfi payments:create --json examples/payment.create.json
-```
-
-The invoice body requires `paylinkId`, `network`, `symbol`, and `customerEmail`. It also accepts optional
-`clientReferenceId` (your internal customer/order reference, returned as
-`customer.clientReferenceId` in webhooks), `customerName`, `customerPhone`, `customerDateOfBirth`,
-`customerAddress`, `subscriptionId`, `language`, and `metadata`.
-
-Hosted Paylink URLs accept the same payment-scoped metadata through explicitly namespaced query
-parameters such as `metadata[order_id]=order-123`. Metadata keys must use letters, numbers,
-underscores, or dashes; values passed through the hosted URL are strings. The payment API also
-accepts finite numbers and booleans. Metadata is limited to 20 keys, 64 characters per key, and
-500 characters per string value.
-
-Use a stable customer or application-user id for `clientReferenceId` when webhook handlers must
-resolve subscription ownership. Native (`NONE`) payloads expose it as
-`data.customer.clientReferenceId`; Stripe-compatible Checkout Session payloads use
-`data.object.client_reference_id`, Stripe-compatible Invoice and Subscription payloads use
-`data.object.metadata.client_reference_id`, and Lemon Squeezy-compatible payloads use
-`meta.custom_data.client_reference_id`.
-
-Check payment status:
-
-```bash
-yolfi payments:status --id <paymentId>
-```
-
-Every CLI command prints JSON so agents can parse results without scraping terminal text.
-
-## MCP Server For Crypto Payments
-
-Yolfi provides both a production streamable HTTP endpoint and a local stdio server:
-
-```txt
-Remote: https://app.yolfi.com/mcp
-Local:  npx -y @yolfi/agent mcp
-```
-
-The packaged Codex and Claude plugins use the bundled local stdio server so agent setup, check-in, and new-user registration are available as MCP tools. A manually configured remote connection uses OAuth managed by the MCP host and does not expose those local credential tools.
-
-Codex remote:
-
-```bash
-codex mcp add yolfi --url https://app.yolfi.com/mcp
-codex mcp login yolfi
-```
-
-Codex local:
-
-```bash
-codex mcp add yolfi -- npx -y @yolfi/agent mcp
-```
-
-Claude Code remote:
-
-```bash
-claude mcp add --transport http yolfi https://app.yolfi.com/mcp
-```
-
-Then open Claude Code, run `/mcp`, select Yolfi, and complete browser authorization.
-
-Claude Code local:
-
-```bash
-claude mcp add yolfi -- npx -y @yolfi/agent mcp
-```
-
-Generic local MCP configuration:
+A single local server provides payment tools, knowledge resources, and guided prompts:
 
 ```json
 {
@@ -256,225 +95,118 @@ Generic local MCP configuration:
 }
 ```
 
-After connecting a local server, call `yolfi_agent_setup_start` with a stable `agent` slug, open the returned `loginUrl`, then call `yolfi_agent_checkin` with the same slug. The local server stores the connected credential securely. For CI and other non-interactive environments, provide a manually managed `YOLFI_API_KEY` instead.
+The bundled Codex and Claude plugins start the local server. Local-only tools include `yolfi_agent_setup_start`, `yolfi_agent_checkin`, `yolfi_agent_register`, and `yolfi_webhooks_verify`. Remote MCP uses host OAuth. Verify it with `yolfi_auth_status` in that host, not a separate CLI login. An environment that cannot run commands must use a supported remote connector; the agent should explain only the required owner action if the host cannot configure it automatically.
 
-For ChatGPT desktop, open **Settings → MCP servers → Add server**, choose **Streamable HTTP**, enter `https://app.yolfi.com/mcp`, save, and restart. ChatGPT web uses a remote MCP-backed plugin in Work mode; it cannot start the local stdio command or read local Codex configuration. Detailed ChatGPT developer-mode and plugin steps are in [docs/agent-setup.md](docs/agent-setup.md).
+Core tools include organization read/update, settlement configuration, webhook endpoint list/create/update/rotation/removal, paylink list/get/create/disable, `yolfi_checkout_sessions_create`, `yolfi_checkout_sessions_get`, and payment create/status. Tool availability should be read from the connected server. Checkout Session tools and settlement merge require a backend that supports those endpoints; do not silently fall back to replacing organization settlement settings.
 
-Available MCP tools:
+## Reuse resources before creating them
 
-- `yolfi_agent_setup_start`
-- `yolfi_agent_checkin`
-- `yolfi_agent_register`
-- `yolfi_auth_status`
-- `yolfi_organization_get`
-- `yolfi_organization_update`
-- `yolfi_settlement_configure`
-- `yolfi_webhooks_configure`
-- `yolfi_webhooks_list`
-- `yolfi_webhooks_update`
-- `yolfi_webhooks_rotate_secret`
-- `yolfi_webhooks_delete`
-- `yolfi_paylinks_create`
-- `yolfi_paylinks_list`
-- `yolfi_paylinks_get`
-- `yolfi_paylinks_disable`
-- `yolfi_payments_create`
-- `yolfi_payments_status`
-- `yolfi_webhooks_verify`
+```bash
+npx -y @yolfi/agent organization:get
+npx -y @yolfi/agent paylinks:list --page 1 --rows 10
+npx -y @yolfi/agent webhooks:list
+```
 
-Webhook create/rotate tools save the one-time signing secret in the protected local Yolfi config and never return its plaintext through CLI stdout or an MCP transcript. Pass `endpointId` to `yolfi_webhooks_verify` to use that stored secret. CI and deployed services can provide an explicitly managed `YOLFI_WEBHOOK_SECRET` instead.
+Read all relevant pages and the project's existing configuration. Reuse approved wallets, prices, matching paylinks, and webhook endpoints. `settlement:configure` sends `PATCH /api/private/organization/settlement-accounts`, updating only supplied networks and preserving other networks. Changing an existing wallet still requires an owner-approved address.
 
-Destructive tools such as `yolfi_paylinks_disable` must only run after explicit user confirmation.
+Create JSON payload files in the target project before passing them to `--json`; package examples are not automatically copied there. For example, after confirming these product values:
 
-## JSON Workflow For Agents
-
-Agents can write a payload file and pass it to the CLI:
-
-```json
+```bash
+cat > yolfi-paylink.json <<'JSON'
 {
   "name": "Premium Download",
-  "description": "One-time access to a digital product.",
-  "type": "ONE_TIME",
   "price": "19",
   "currency": "USD",
-  "collectEmail": true,
-  "metadata": {
-    "source": "agent",
-    "productSlug": "premium-download"
-  }
+  "type": "ONE_TIME",
+  "collectEmail": true
 }
+JSON
+npx -y @yolfi/agent paylinks:create --json ./yolfi-paylink.json
 ```
 
-Then run:
+See [examples](examples/) for payload shapes. If create times out, list resources before retrying. Webhook create is not an upsert; creating the same URL twice creates independent endpoints with different secrets.
+
+## Webhook secrets and deployment
+
+Local CLI/MCP create and rotate operations save the endpoint signing secret in the protected local config and return redacted metadata with `signingSecretStored: true`. Lists and updates never return the secret. Use the endpoint ID for local verification:
 
 ```bash
-yolfi paylinks:create --json ./paylink.json
+npx -y @yolfi/agent webhooks:verify \
+  --endpoint-id <endpointId> \
+  --payload ./raw-webhook.json \
+  --signature <signature>
 ```
 
-Agents should keep the returned paylink ID in env/config for the target app and use Yolfi public payment endpoints for customer-facing checkout and status polling.
+`YOLFI_WEBHOOK_SECRET` can supply a server/CI secret. Plaintext `--secret` flags and MCP `secret` arguments are not supported; use the endpoint ID or environment. An API key or an agent credential is never a webhook signing secret.
 
-## Commands
+Install the SDK for application code:
 
 ```bash
-yolfi setup --agent codex
-yolfi checkin --agent codex
-yolfi auth:agent-register --email "owner@example.com" --project-name "App" --agent-name "Codex" --integration-intent accept_payments --idempotency-key <same-key-on-retry>
-yolfi auth:status
-yolfi organization:update --json organization.json
-yolfi settlement:configure --json settlement.json
-yolfi webhooks:configure --url https://example.com/api/yolfi/webhook --adapter STRIPE
-yolfi paylinks:create --json paylink.json
-yolfi paylinks:list --page 1 --rows 10
-yolfi paylinks:get --id <paylinkId>
-yolfi paylinks:disable --id <paylinkId> --confirm
-yolfi payments:create --json payment.json
-yolfi payments:status --id <paymentId>
-yolfi webhooks:verify --payload payload.json --signature <signature>
-yolfi mcp
+npm install @yolfi/agent
 ```
 
-## Endpoint Adapter Matrix
-
-Yolfi Agent Kit maps agent actions to the canonical Yolfi API:
-
-| Agent action | Backend endpoint | Auth |
-| --- | --- | --- |
-| Start browser agent setup | `POST /api/agent/setup/start` | public; returns short-lived check-in state |
-| Check browser agent setup | `POST /api/agent/setup/checkin` | public check-in token; returns credential once when connected |
-| Register a new Yolfi user and workspace | `POST /api/auth/agent/register` | public signup-only flow; confirmed new email required |
-| Check account | `GET /api/private/organization/current` | bearer API key |
-| Configure organization and settlement wallets | `PUT /api/private/organization/current` | bearer API key |
-| Create webhook endpoint | `POST /api/private/organization/webhook-endpoints` | bearer API key |
-| Get API key status | `GET /api/private/organization/api-key` | bearer API key or cookie |
-| Create paylink | `POST /api/private/paylinks/create` | bearer API key |
-| List paylinks | `GET /api/private/paylinks` | bearer API key |
-| Get paylink | `GET /api/private/paylinks/:id` | bearer API key |
-| Edit paylink | `POST /api/private/paylinks/edit` | bearer API key |
-| Disable paylink | `POST /api/private/paylinks/disable` | bearer API key plus confirmation |
-| Public paylink checkout info | `GET /api/public/paylinks/:id` | public |
-| Create public payment invoice | `POST /api/public/payments` | public |
-| Payment status | `GET /api/public/payments/:id` | public |
-| Merchant transactions | `GET /api/private/transactions` | bearer API key |
-
-## SDK
+For a local provisioning script, `readWebhookSigningSecret(endpointId)` retrieves a stored secret. Pass it directly to the target deployment's secret manager or an existing ignored environment file without printing it. The app should read its deployed `YOLFI_WEBHOOK_SECRET`; it should not depend on a developer machine's `~/.yolfi`. Direct SDK create/rotate methods return the API response so trusted server code can store the secret itself.
 
 ```js
-import { YolfiClient } from "@yolfi/agent";
+import { readWebhookSigningSecret, verifyWebhookSignature } from '@yolfi/agent';
 
-const yolfi = new YolfiClient({
-  apiKey: process.env.YOLFI_API_KEY,
-});
+// Provisioning script only: pass this value to your existing secret manager.
+const signingSecret = readWebhookSigningSecret(endpointId);
+if (!signingSecret) throw new Error('Stored endpoint secret is missing');
 
-const account = await yolfi.authStatus();
-
-const paylink = await yolfi.createPaylink({
-  name: "Premium Download",
-  description: "One-time access to a digital product.",
-  type: "ONE_TIME",
-  price: "19",
-  currency: "USD",
-  collectEmail: true,
-  metadata: {
-    source: "agent",
-    productSlug: "premium-download",
-  },
-});
-
-console.log(account.success);
-console.log(paylink.data?.id ?? paylink.id);
+// Application webhook handler: verify the raw body with the deployed secret.
+const valid = verifyWebhookSignature(rawBody, signature, process.env.YOLFI_WEBHOOK_SECRET);
+if (!valid) throw new Error('Invalid Yolfi webhook signature');
 ```
 
-## Webhook Verification
+Reuse a matching endpoint and its installed secret. If its secret is unavailable, explain the required recovery instead of silently rotating a live secret or creating a duplicate. Rotation and removal require explicit confirmation. Analytics endpoints use `NONE` without metadata filters; generic filters are optional flat string maps for explicit current-payment categories, never authorization or tenant routing.
 
-Yolfi signs webhook payloads with `X-Yolfi-Signature`. Verify the raw request body before parsing and trusting the event:
+## JavaScript SDK and application runtime
+
+Fixed-paylink checkout uses a public checkout URL. Public payment creation and status checks also need no organization API key. Keep the paylink ID in app configuration and verify access grants using signed webhook events or authoritative payment status.
+
+Dynamic, server-priced orders use authenticated Checkout Session creation. The backend calculates the amount and uses its own server credential; the MCP host's OAuth session is not an application credential. A deployed service needs an intentionally provisioned secret. Never copy host OAuth tokens into the app or assume a local CLI login exists in production.
 
 ```js
-import { verifyWebhookSignature } from "@yolfi/agent";
+import { YolfiClient } from '@yolfi/agent';
 
-const valid = verifyWebhookSignature(
-  rawBody,
-  request.headers["x-yolfi-signature"],
-  process.env.YOLFI_WEBHOOK_SECRET,
-);
-
-if (!valid) {
-  throw new Error("Invalid Yolfi webhook signature");
-}
+if (!process.env.YOLFI_API_KEY) throw new Error('Server credential is not provisioned');
+const yolfi = new YolfiClient({ apiKey: process.env.YOLFI_API_KEY });
+const session = await yolfi.createCheckoutSession({
+  amount: '19',
+  currency: 'USD',
+  merchantOrderId: 'order-123',
+  clientReferenceId: 'user-123',
+}, { idempotencyKey: 'checkout-order-123' });
 ```
 
-Do not treat a frontend redirect as proof of payment. Use verified webhooks and Yolfi payment status checks.
+Use `paylinkId` instead of `amount` and `currency` for a paylink-backed session. Standalone sessions require a stable idempotency key and support one-time payments. Public payment creation accepts `paylinkId` or `checkoutSessionId`, plus `network` and `symbol`; customer email must be supplied directly or already present in the session. Payment metadata and paylink `paymentMetadata` accept flat string, finite-number, or boolean values. `clientReferenceId` should be a stable app user/customer ID for subscription attribution.
 
-## Use With AI Coding Agents
+Choose the payment network and token from the organization's or paylink's supported-token catalog. Litecoin uses `network: "LTC"` and `symbol: "LTC"`; availability depends on the deployment and organization settings.
 
-Yolfi Agent Kit is designed for agentic payment workflows where the user gives a high-level instruction like "add payments", "sell this digital product", "add a donation button", "charge for this game", or "gate this feature behind payment".
+The SDK `getApiKey()` reads the full organization API key when authorized. It is not a status check and must not be printed as diagnostic output. Use `authStatus()` for account verification.
 
-- Codex: inspect the repo, add checkout routes/components, configure env vars, and wire verified webhooks into existing entitlement logic.
-- Claude Code: use the MCP server and Agent Skill to add payment links, server handlers, and status checks with user approval for wallet and price decisions.
-- Cursor: add payment UI and backend handlers while keeping Yolfi keys out of committed source.
-- OpenClaw and custom agents: connect product-building workflows to Yolfi through CLI, SDK, MCP tools, and JSON payloads.
+## CLI commands
 
-Recommended agent path:
-
-```txt
-auth:status -> organization:get -> paylinks:list -> user approval -> settlement:configure -> webhooks:configure -> paylinks:create -> install checkout -> verify webhook -> payments:status
+```bash
+npx -y @yolfi/agent organization:update --json ./organization.json
+npx -y @yolfi/agent settlement:configure --json ./settlement.json
+npx -y @yolfi/agent webhooks:add --name Application --url https://example.com/api/yolfi/webhook --adapter NONE
+npx -y @yolfi/agent webhooks:update --id <endpointId> --json ./endpoint.json
+npx -y @yolfi/agent webhooks:rotate-secret --id <endpointId> --confirm
+npx -y @yolfi/agent webhooks:remove --id <endpointId> --confirm
+npx -y @yolfi/agent paylinks:get --id <paylinkId>
+npx -y @yolfi/agent paylinks:disable --id <paylinkId> --confirm
+npx -y @yolfi/agent checkout-sessions:create --json ./checkout-session.json --idempotency-key <stable-order-key>
+npx -y @yolfi/agent checkout-sessions:get --id <checkoutSessionId>
+npx -y @yolfi/agent payments:create --json ./payment.json
+npx -y @yolfi/agent payments:status --id <paymentId>
 ```
 
-## Agent Recipes
+Operational commands print JSON. `help` prints usage text; `mcp` speaks the MCP protocol. Payload files must exist in your working directory. `organization:update` is a generic API update; use `settlement:configure` to preserve unmentioned networks.
 
-The `examples/` folder includes copy-paste workflows and JSON payloads:
+## Verification
 
-- `examples/codex/add-yolfi-payments.md`
-- `examples/claude-code/add-yolfi-payments.md`
-- `examples/cursor/add-yolfi-payments.md`
-- `examples/paylink.one-time.json`
-- `examples/paylink.recurring.json`
-- `examples/organization.settlement.json`
-- `examples/payment.create.json`
-- `examples/webhook.stripe-adapter.json`
+Report account authorization, local tests, deployment configuration, and live payment/webhook verification separately. A redirect, a successful connection, or a local signature test is not proof that the full payment path works. Preserve the app's existing billing and entitlement logic, and do not create paid test activity merely to claim verification.
 
-## What This Package Is Not
-
-- It is not a separate Yolfi dashboard.
-- It is not a wallet provider.
-- It is not a second payment API with duplicated business logic.
-- It does not invent settlement wallets, product names, prices, currencies, subscriptions, or donation amounts.
-- It does not bypass user confirmation for destructive actions.
-- It does not store secrets in source code.
-- It does not use redirects as payment confirmation.
-
-## Current Limits
-
-- ChatGPT web can use only the remote MCP endpoint through a plugin; it cannot start the local stdio package.
-- Each webhook endpoint has its own signing secret. The CLI/MCP create and rotate flows store it locally without printing it; verification uses `--endpoint-id`, MCP `endpointId`, or the explicitly managed `YOLFI_WEBHOOK_SECRET`. The organization API key is never used as a signing secret.
-- Browser setup returns the agent credential once at successful check-in. The local CLI stores it in the protected Yolfi config; remote hosts manage authentication separately.
-- Final payment confirmation should come from verified webhooks and payment status checks, not from UI redirects.
-- MCP directory approval is separate from this package. Do not claim official directory approval until a listing is accepted.
-
-## Search Phrases This Package Serves
-
-Developers and agent builders often look for:
-
-- AI agent payment integration
-- AI coding agent payments
-- MCP payment server
-- MCP crypto payments
-- crypto checkout API for agents
-- payment links for AI agents
-- stablecoin checkout for apps
-- webhook payment verification
-- agentic payment workflow
-- add crypto payments with Codex, Claude Code, or Cursor
-
-Yolfi Agent Kit is the package entry point for those workflows.
-
-## Links
-
-- Yolfi: <https://yolfi.com>
-- Agent Kit page: <https://yolfi.com/ai-agent-kit>
-- Docs: <https://docs.yolfi.com/en/agent-kit>
-- LLM index: <https://docs.yolfi.com/llms.txt>
-- Full LLM context: <https://docs.yolfi.com/llms-full.txt>
-- npm package: <https://www.npmjs.com/package/@yolfi/agent>
-- GitHub repo: <https://github.com/yolfinance/yolfi-agent>
-- Glama MCP listing: <https://glama.ai/mcp/servers/yolfinance/yolfi-agent>
-- Integration guide: <https://yolfi.com/blog/ai-agent-payment-integration-api>
+Package checks: `npm run check`. No package publication or directory approval is implied by a local version or passing tests.

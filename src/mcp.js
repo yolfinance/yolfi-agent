@@ -16,10 +16,11 @@ const SUPPORTED_PROTOCOL_VERSIONS = new Set([
 ]);
 const SERVER_NAME = 'yolfi-agent-kit';
 const SERVER_TITLE = 'Yolfi Payments MCP';
-const SERVER_VERSION = '0.2.0';
+const SERVER_VERSION = '0.2.1';
 const WEBHOOK_ADAPTERS = ['NONE', 'STRIPE', 'LEMON_SQUEEZY'];
 const PAYLINK_TYPES = ['ONE_TIME', 'RECURRING'];
 const PAYLINK_CURRENCIES = ['USD', 'EUR', 'CNY'];
+const PAYMENT_NETWORKS = ['ETH', 'ARB', 'OP', 'BASE', 'BNB', 'SOL', 'TRON', 'LTC'];
 const RECURRING_INTERVALS = ['WEEK', 'BIWEEK', 'TWO_DAYS', 'MONTH', 'BIMONTH', 'QUARTER', 'BIANNUAL', 'YEARLY'];
 const METADATA_FILTERS_SCHEMA = {
   type: 'object',
@@ -99,7 +100,7 @@ const tools = [
   {
     name: 'yolfi_auth_status',
     title: 'Check Yolfi Auth Status',
-    description: 'Verify the active OAuth, local agent, or API-key credential and return the current Yolfi organization context before mutating payment settings.',
+    description: 'Verify this local MCP connection using its stored agent credential or explicit credential override and return the current organization. No additional API key is needed after browser setup.',
     annotations: {
       readOnlyHint: true,
       destructiveHint: false,
@@ -111,7 +112,7 @@ const tools = [
   {
     name: 'yolfi_organization_get',
     title: 'Get Yolfi Organization',
-    description: 'Read the current Yolfi organization settings, including webhook and settlement configuration visible to this API key.',
+    description: 'Read the current Yolfi organization settings, including webhook and settlement configuration available to this authenticated connection.',
     annotations: {
       readOnlyHint: true,
       destructiveHint: false,
@@ -133,12 +134,15 @@ const tools = [
     inputSchema: jsonSchema({
       name: { type: 'string', description: 'Merchant or project display name approved by the user.' },
       email: { type: 'string', description: 'Merchant support or account email approved by the user.' },
+      logoUrl: { type: 'string', description: 'Existing or owner-approved public organization logo URL.' },
+      feePayer: { type: 'string', enum: ['MERCHANT', 'CUSTOMER'], description: 'Owner-approved party paying the platform fee.' },
+      disableAllEmailNotifications: { type: 'boolean', description: 'Owner-approved setting to disable all organization email notifications.' },
     }),
   },
   {
     name: 'yolfi_settlement_configure',
     title: 'Configure Yolfi Settlement Wallets',
-    description: 'Configure settlement wallets after the user provides wallet addresses, networks, and enabled tokens. Never invent wallet addresses.',
+    description: 'Add or update only the supplied settlement networks, preserving other configured networks. Read current settings first and reuse approved wallet addresses; ask only for missing wallet or token decisions.',
     annotations: {
       readOnlyHint: false,
       destructiveHint: false,
@@ -148,7 +152,7 @@ const tools = [
     inputSchema: jsonSchema({
       settlementAccounts: {
         type: 'array',
-        description: 'Settlement account objects accepted by the Yolfi organization endpoint. Example fields: id, address, tokens.',
+        description: 'Networks to add or update through PATCH /api/private/organization/settlement-accounts. Other networks are preserved. Example fields: id, address, tokens.',
         items: { type: 'object' },
       },
     }, ['settlementAccounts']),
@@ -156,7 +160,7 @@ const tools = [
   {
     name: 'yolfi_webhooks_configure',
     title: 'Configure Yolfi Webhooks',
-    description: 'Configure webhook delivery for the target app. The host must not invent backend URLs and must ensure the app verifies X-Yolfi-Signature.',
+    description: 'Create a webhook endpoint only after listing and reusing any matching endpoint. Stores its signing secret locally without returning plaintext. Use an existing app URL and verify X-Yolfi-Signature.',
     annotations: {
       readOnlyHint: false,
       destructiveHint: false,
@@ -167,6 +171,7 @@ const tools = [
       name: { type: 'string', description: 'Endpoint display name, for example Merchant analytics.' },
       url: { type: 'string', description: 'HTTPS webhook URL in the target app, for example https://example.com/api/yolfi/webhook.' },
       adapter: { type: 'string', enum: WEBHOOK_ADAPTERS, description: 'Webhook adapter output format. Defaults to NONE if omitted.' },
+      enabled: { type: 'boolean', description: 'Whether the new webhook endpoint receives deliveries. Defaults to true.' },
       metadataFilters: METADATA_FILTERS_SCHEMA,
     }, ['url']),
   },
@@ -229,12 +234,14 @@ const tools = [
       currency: { type: 'string', enum: PAYLINK_CURRENCIES, description: 'Account currency code. Supported values are USD, EUR, and CNY.' },
       type: { type: 'string', enum: PAYLINK_TYPES, description: 'Payment link type: ONE_TIME or RECURRING.' },
       recurringInterval: { type: 'string', enum: RECURRING_INTERVALS, description: 'Recurring billing interval when type is RECURRING.' },
+      recurringIntervalCount: { type: 'integer', minimum: 1, maximum: 183, description: 'Multiplier for the recurring interval; the backend applies the interval-specific maximum.' },
       collectEmail: { type: 'boolean', description: 'Whether checkout should collect customer email.' },
       collectName: { type: 'boolean', description: 'Whether checkout should collect the customer name.' },
       collectDateOfBirth: { type: 'boolean', description: 'Whether checkout should collect the customer date of birth.' },
       collectAddress: { type: 'boolean', description: 'Whether checkout should collect the customer address.' },
       collectPhoneNumber: { type: 'boolean', description: 'Whether checkout should collect the customer phone number.' },
       metadata: { type: 'object', description: 'Safe non-secret metadata such as source, productSlug, planId, or environment.' },
+      paymentMetadata: { type: 'object', description: 'Default payment metadata as a flat map of strings, finite numbers, or booleans; do not use customer-controlled metadata as authorization.' },
     }, ['name', 'price']),
   },
   {
@@ -280,9 +287,40 @@ const tools = [
     }, ['id', 'confirm']),
   },
   {
+    name: 'yolfi_checkout_sessions_create',
+    title: 'Create Yolfi Checkout Session',
+    description: 'Create hosted checkout for an existing paylink or a server-approved standalone amount and currency. Reuse the same idempotencyKey for the same order on retries.',
+    annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: true },
+    inputSchema: jsonSchema({
+      paylinkId: { type: 'string', description: 'Existing paylink ID. Omit amount and currency when supplied; the paylink determines the price.' },
+      amount: { type: 'string', description: 'Positive decimal string for standalone checkout, calculated by trusted server code.' },
+      currency: { type: 'string', enum: PAYLINK_CURRENCIES, description: 'Required for standalone checkout. Must match the approved order currency.' },
+      merchantOrderId: { type: 'string', description: 'Stable merchant-side order identifier for reconciliation.' },
+      description: { type: 'string', description: 'Optional customer-facing description of the approved purchase.' },
+      customerEmail: { type: 'string', description: 'Optional known customer email. Checkout must collect an email before creating a payment if it is absent.' },
+      customerName: { type: 'string', description: 'Optional customer name already known to the merchant.' },
+      clientReferenceId: { type: 'string', description: 'Stable merchant customer or user ID for webhook attribution.' },
+      subscriptionId: { type: 'string', description: 'Existing subscription ID for a paylink-backed session only.' },
+      metadata: { type: 'object', description: 'Flat non-secret metadata with string, finite number, or boolean values.' },
+      successUrl: { type: 'string', description: 'Approved return URL after checkout. A redirect is not proof of payment.' },
+      cancelUrl: { type: 'string', description: 'Approved return URL when checkout is cancelled.' },
+      expiresInMinutes: { type: 'integer', minimum: 5, maximum: 1440, description: 'Checkout lifetime in minutes; defaults to 60.' },
+      idempotencyKey: { type: 'string', minLength: 16, maxLength: 200, description: 'Stable retry key, required for standalone sessions and recommended for every order. Reuse with the identical request.' },
+    }),
+  },
+  {
+    name: 'yolfi_checkout_sessions_get',
+    title: 'Get Yolfi Checkout Session',
+    description: 'Read a Checkout Session belonging to the authenticated organization and inspect its payment state.',
+    annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
+    inputSchema: jsonSchema({
+      id: { type: 'string', pattern: '^ycs_[a-f0-9]{32}$', description: 'Checkout Session public ID returned by create, beginning with ycs_.' },
+    }, ['id']),
+  },
+  {
     name: 'yolfi_payments_create',
     title: 'Create Yolfi Public Payment',
-    description: 'Create a public payment invoice from an existing paylink for checkout integration, testing, or customer flow setup.',
+    description: 'Create a public payment invoice from an existing paylink or Checkout Session for checkout integration, testing, or customer flow setup.',
     annotations: {
       readOnlyHint: false,
       destructiveHint: false,
@@ -290,10 +328,11 @@ const tools = [
       openWorldHint: true,
     },
     inputSchema: jsonSchema({
-      paylinkId: { type: 'string', description: 'Yolfi paylink ID used to create the customer payment.' },
-      network: { type: 'string', description: 'Blockchain network identifier supported by the Yolfi organization, for example ARB.' },
-      symbol: { type: 'string', description: 'Payment token symbol supported on the selected network, for example USDC.' },
-      customerEmail: { type: 'string', description: 'Customer email required for checkout and payment receipts.' },
+      paylinkId: { type: 'string', description: 'Existing paylink ID, required unless checkoutSessionId supplies the checkout context.' },
+      checkoutSessionId: { type: 'string', pattern: '^ycs_[a-f0-9]{32}$', description: 'Checkout Session public ID. The session supplies trusted amount, currency, and optional customer email.' },
+      network: { type: 'string', enum: PAYMENT_NETWORKS, description: 'Choose a network enabled in the organization or paylink supported-token catalog. Litecoin uses LTC.' },
+      symbol: { type: 'string', description: 'Payment token symbol supported on the selected network, for example USDC on ARB or LTC on LTC.' },
+      customerEmail: { type: 'string', description: 'Customer email, required unless already present in the referenced Checkout Session. Do not invent an email.' },
       clientReferenceId: { type: 'string', description: 'Optional merchant reference for the customer or order; returned as customer.clientReferenceId in webhook payloads.' },
       customerName: { type: 'string', description: 'Optional customer name.' },
       customerPhone: { type: 'string', description: 'Optional customer phone number.' },
@@ -302,7 +341,7 @@ const tools = [
       subscriptionId: { type: 'string', description: 'Optional existing subscription ID to associate the payment with.' },
       language: { type: 'string', description: 'Optional checkout language code supported by Yolfi.' },
       metadata: { type: 'object', description: 'Safe non-secret metadata for the target app payment flow.' },
-    }, ['paylinkId', 'network', 'symbol', 'customerEmail']),
+    }, ['network', 'symbol']),
   },
   {
     name: 'yolfi_payments_status',
@@ -353,26 +392,26 @@ const prompts = [
 ];
 
 const resourceText = {
-  'yolfi://docs/llms': '# Yolfi for AI agents\nUse @yolfi/agent or the local Yolfi MCP tools to authorize an existing account or create a new one, then configure payment operations. Existing accounts use yolfi_agent_setup_start followed by yolfi_agent_checkin. New users confirm an email and project name for yolfi_agent_register, open the emailed confirmation link, then call the same tool again. Explicit YOLFI_API_KEY still takes precedence for CI and secret-manager environments.',
-  'yolfi://docs/agent-quickstart': '# Agent quickstart\nFor an existing account, call yolfi_agent_setup_start, let the user complete browser authorization, then call yolfi_agent_checkin. For a new user, ask them to confirm their email and project name before calling yolfi_agent_register; after they open the emailed confirmation link, call yolfi_agent_register again with the same arguments. Never re-register an existing email. Then call yolfi_auth_status, ask for wallet and pricing decisions, create or reuse a paylink, and verify payment status and webhook signatures.',
-  'yolfi://docs/webhooks': '# Webhooks\nYolfi signs the raw JSON payload with HMAC-SHA256 base64 in X-Yolfi-Signature. Local create and rotate tools store each endpoint secret in the protected Yolfi config without returning plaintext. Verify with endpointId or an explicitly managed YOLFI_WEBHOOK_SECRET.',
-  'yolfi://docs/paylinks': '# Paylinks\nUse POST /api/private/paylinks/create with bearer API key. Do not create duplicate paylinks after timeout without listing existing paylinks first.',
-  'yolfi://examples/codex': '# Codex\nUse npx -y @yolfi/agent help, inspect the target app, then use Yolfi tools to add checkout and webhook handling.',
-  'yolfi://examples/claude-code': '# Claude Code\nUse the Yolfi MCP server and ask the user for wallet and pricing decisions before mutating the target app.',
-  'yolfi://examples/cursor': '# Cursor\nUse @yolfi/agent examples and keep secrets in env files that are ignored by git.',
+  'yolfi://docs/llms': '# Yolfi for AI agents\nCanonical integration guide: https://docs.yolfi.com/ai\nConnection reference: https://docs.yolfi.com/en/agent-kit/connections\nRead these guides, inspect the project and existing connection, then implement the requested integration. Ask only for missing owner decisions. Do not stop after connecting.',
+  'yolfi://docs/agent-quickstart': '# Agent quickstart\nRead https://docs.yolfi.com/ai first. Reuse an authenticated connection and verify it with yolfi_auth_status. Continue through its tools without requesting an additional organization API key or another CLI login. If local authorization is missing, use yolfi_agent_setup_start, open its loginUrl for owner authorization, and call yolfi_agent_checkin. For an explicitly new account, yolfi_agent_register needs an owner-confirmed email and project name; repeat after email confirmation. Inspect organization, wallets, paylinks, webhook endpoints, and project settings before writes. Reuse approved values and resources; ask only for missing choices. Add checkout and verified webhook handling, then report exactly what was tested. Connection success is not payment-flow verification.',
+  'yolfi://docs/webhooks': '# Webhooks\nReference: https://docs.yolfi.com/en/webhooks\nList endpoints and reuse a matching app URL and adapter before creating one. Local create/rotate stores each secret in protected local config and redacts output. Verify using endpointId or YOLFI_WEBHOOK_SECRET. For deployment, use the SDK readWebhookSigningSecret(endpointId) in a local script to transfer the secret through the app secret manager without printing it. Never use the API key as the signing secret. A local signature check does not verify live delivery.',
+  'yolfi://docs/paylinks': '# Paylinks\nReference: https://docs.yolfi.com/en/api\nReuse existing approved paylinks before creating one. List again after an uncertain create result. Fixed-paylink checkout and public payment status need no runtime API key. Private Checkout Session creation requires a server credential and a stable per-order idempotency key.',
+  'yolfi://examples/codex': '# Codex\nAdd Yolfi payments to this project. Use https://docs.yolfi.com/ai. Reuse connected MCP tools or local CLI. Verify remote OAuth through MCP tools, not the separate local CLI credential store.',
+  'yolfi://examples/claude-code': '# Claude Code\nAdd Yolfi payments to this project. Use https://docs.yolfi.com/ai. Inspect project and account state first, reuse approved settings, and ask only for missing owner decisions.',
+  'yolfi://examples/cursor': '# Cursor\nAdd Yolfi payments to this project. Use https://docs.yolfi.com/ai. Use connected MCP tools or npx -y @yolfi/agent, and create any needed JSON payload in the target project before referencing its path.',
 };
 
 const promptText = {
   integrate_yolfi_payments: `${resourceText['yolfi://docs/agent-quickstart']}\n\nInspect the target application before editing it. Reuse its framework and secret-management conventions, then add checkout, payment status, and a verified webhook path.`,
-  create_yolfi_paylink: '# Create a Yolfi paylink\nAuthorize Yolfi, list existing paylinks to prevent duplicates, collect the product name and price from the user, and create the minimum matching ONE_TIME or RECURRING paylink. Return its ID and checkout URL.',
-  add_yolfi_webhook_handler: `${resourceText['yolfi://docs/webhooks']}\n\nInspect the application server, ask for the intended callback URL, configure a Yolfi webhook endpoint, and verify X-Yolfi-Signature against the raw request body before accepting an event.`,
+  create_yolfi_paylink: '# Create a Yolfi paylink\nRead https://docs.yolfi.com/ai. Verify authorization, list existing paylinks, and reuse approved project pricing. Ask only for missing decisions. Reuse a matching link or create the minimum requested ONE_TIME or RECURRING paylink. Return its ID and checkout URL.',
+  add_yolfi_webhook_handler: `${resourceText['yolfi://docs/webhooks']}\n\nInspect the existing app handler, deployment URL and secret management. Ask only for missing information, then add or reuse the endpoint and verify X-Yolfi-Signature against the raw body.`,
   verify_yolfi_payment_flow: '# Verify a Yolfi payment flow\nExercise the checkout path, fetch the payment by ID, and confirm the server handles a correctly signed webhook. A frontend redirect alone is not proof of payment.',
   migrate_existing_stripe_webhook_to_yolfi_adapter: '# Migrate a Stripe-style webhook path\nInspect the existing webhook contract, configure a Yolfi endpoint with the STRIPE adapter only after user approval, update authentication to validate the Yolfi endpoint secret, and verify the complete event path.',
 };
 
 export function createMcpCapabilities() {
   return {
-    serverNames: ['yolfi-api', 'yolfi-knowledge'],
+    serverNames: ['yolfi'],
     tools,
     resources,
     prompts,
@@ -489,8 +528,21 @@ function validateSchemaValue(value, schema, path, errors) {
   if (schema.type === 'string' && schema.minLength !== undefined && value.length < schema.minLength) {
     errors.push(`${path} must be at least ${schema.minLength} characters`);
   }
+  if (schema.type === 'string' && schema.pattern && !new RegExp(schema.pattern).test(value)) {
+    errors.push(`${path} has an invalid format`);
+  }
+  if (schema.type === 'integer' && !Number.isInteger(value)) {
+    errors.push(`${path} must be an integer`);
+    return;
+  }
   if (schema.type === 'number' && (typeof value !== 'number' || !Number.isFinite(value))) {
     errors.push(`${path} must be a finite number`);
+  }
+  if (typeof value === 'number' && schema.minimum !== undefined && value < schema.minimum) {
+    errors.push(`${path} must be at least ${schema.minimum}`);
+  }
+  if (typeof value === 'number' && schema.maximum !== undefined && value > schema.maximum) {
+    errors.push(`${path} must be at most ${schema.maximum}`);
   }
   if (schema.type === 'boolean' && typeof value !== 'boolean') {
     errors.push(`${path} must be a boolean`);
@@ -593,7 +645,25 @@ export async function callMcpTool(name, args = {}, options = {}) {
           throw new Error('confirm=true is required to disable a paylink');
         }
         return textResult('Yolfi paylink disabled', await client.disablePaylink(args.id));
+      case 'yolfi_checkout_sessions_create': {
+        const { idempotencyKey, ...payload } = args;
+        if (payload.paylinkId && (payload.amount !== undefined || payload.currency !== undefined)) {
+          throw new Error('Paylink-backed Checkout Sessions cannot override amount or currency');
+        }
+        if (!payload.paylinkId && (!payload.amount || !payload.currency || !idempotencyKey)) {
+          throw new Error('Standalone Checkout Sessions require amount, currency, and a stable idempotencyKey');
+        }
+        if (!payload.paylinkId && payload.subscriptionId) {
+          throw new Error('Standalone Checkout Sessions support one-time payments only');
+        }
+        return textResult('Yolfi Checkout Session created', await client.createCheckoutSession(payload, { idempotencyKey }));
+      }
+      case 'yolfi_checkout_sessions_get':
+        return textResult('Yolfi Checkout Session loaded', await client.getCheckoutSession(args.id));
       case 'yolfi_payments_create':
+        if (!args.paylinkId && !args.checkoutSessionId) {
+          throw new Error('Provide paylinkId or checkoutSessionId before creating a payment');
+        }
         return textResult('Yolfi payment created', await client.createPayment(args));
       case 'yolfi_payments_status':
         return textResult('Yolfi payment status loaded', await client.paymentStatus(args.id));
@@ -718,7 +788,7 @@ export async function handleMcpRequest(message) {
           version: SERVER_VERSION,
         },
         instructions:
-          'Existing Yolfi users authorize with yolfi_agent_setup_start and yolfi_agent_checkin. New users confirm their email and project name before yolfi_agent_register, open the emailed link, then call the same registration tool again. Then use Yolfi tools to inspect the workspace, ask for wallet and pricing decisions, create or reuse paylinks, configure verified webhooks, and confirm payments through status checks or signed webhook events.',
+          'Read https://docs.yolfi.com/ai and use Yolfi tools to implement the requested payment integration. Reuse an authenticated connection without requesting an additional API key or CLI login. Verify account and project state; ask only for missing owner decisions. Local authorization uses yolfi_agent_setup_start/checkin; explicitly new users can use email-confirmed yolfi_agent_register. Reuse wallets, paylinks and webhook endpoints. Local webhook secrets are stored securely; use endpointId for verification and a local SDK script for secret-manager handoff. Report connection, code tests, and live payment verification separately.',
       },
     };
   }

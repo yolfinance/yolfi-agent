@@ -85,9 +85,11 @@ test('pending browser setup is isolated by agent slug and can be cleared', (t) =
     checkinToken: 'checkin-secret',
     loginUrl: 'https://app.yolfi.com/agent/setup/session',
     expiresAt: '2026-07-19T10:00:00.000Z',
+    apiBaseUrl: 'https://sandbox.example.test/api',
   });
 
   assert.equal(readPendingSetup('codex').checkinToken, 'checkin-secret');
+  assert.equal(readPendingSetup('codex').apiBaseUrl, 'https://sandbox.example.test/api');
   assert.equal(readPendingSetup('claude-code'), undefined);
 
   clearPendingSetup('codex');
@@ -193,4 +195,40 @@ test('an abandoned recovery slot is completed before acquiring a new lock', (t) 
 
   assert.equal(readStoredCredential().apiKey, 'yolfi_agent_after_recovery_slot');
   assert.equal(readdirSync(getConfigDir()).includes('config.json.lock.recovery'), false);
+});
+
+test('concurrent local clients preserve every independent pending setup and valid JSON', async (t) => {
+  const configHome = useTemporaryConfig(t);
+  const configModule = new URL('../src/config.js', import.meta.url).href;
+  const workers = 8;
+  const perWorker = 20;
+  await Promise.all(Array.from({ length: workers }, (_, worker) => new Promise((resolve, reject) => {
+    const code = `import { savePendingSetup } from ${JSON.stringify(configModule)};
+      for (let index = 0; index < ${perWorker}; index += 1) {
+        savePendingSetup({ agent: 'worker-${worker}-' + index, checkinToken: 'fixture', loginUrl: 'https://example.test/setup' });
+      }`;
+    const child = spawn(process.execPath, ['--input-type=module', '-e', code], {
+      env: { ...process.env, YOLFI_CONFIG_HOME: configHome },
+      stdio: ['ignore', 'ignore', 'pipe'],
+    });
+    let stderr = '';
+    child.stderr.on('data', chunk => { stderr += chunk; });
+    child.on('error', reject);
+    child.on('close', code => code === 0 ? resolve() : reject(new Error(stderr || `Child exited ${code}`)));
+  })));
+  const setups = readConfig().setup;
+  assert.equal(Object.keys(setups).length, workers * perWorker);
+  for (let worker = 0; worker < workers; worker += 1) {
+    for (let index = 0; index < perWorker; index += 1) {
+      assert.equal(setups[`worker-${worker}-${index}`].checkinToken, 'fixture');
+    }
+  }
+});
+
+test('server provisioning helper is exported and retrieves secrets without echoing them', async (t) => {
+  useTemporaryConfig(t);
+  const sdk = await import('../src/index.js');
+  const result = sdk.storeWebhookSigningSecret({ success: true, data: { id: 'endpoint-1', signingSecret: 'fixture-sdk-secret' } });
+  assert.equal(sdk.readWebhookSigningSecret('endpoint-1'), 'fixture-sdk-secret');
+  assert.ok(!JSON.stringify(result).includes('fixture-sdk-secret'));
 });

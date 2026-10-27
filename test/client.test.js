@@ -326,3 +326,46 @@ test('MCP webhook rotation stores and redacts the secret before deletion clears 
     assert.ok(schema.required.includes('confirm'));
   }
 });
+
+test('settlement configuration merges only supplied networks through PATCH', async () => {
+  const calls = [];
+  const client = new YolfiClient({
+    apiKey: 'fixture-key', apiBaseUrl: 'https://app.local/api',
+    fetcher: async (url, options) => {
+      calls.push({ url, options });
+      return jsonResponse({ success: true });
+    },
+  });
+  const accounts = [{ id: 'ARB', address: 'owner-approved-address', tokens: [{ id: 'USDC', enabled: true }] }];
+  await client.configureSettlement(accounts);
+  assert.equal(calls[0].url, 'https://app.local/api/private/organization/settlement-accounts');
+  assert.equal(calls[0].options.method, 'PATCH');
+  assert.deepEqual(JSON.parse(calls[0].options.body), { settlementAccounts: accounts });
+});
+
+test('Checkout Session retries preserve the explicit key outside the payload and keep public reads unauthenticated', async () => {
+  const calls = [];
+  const client = new YolfiClient({
+    apiKey: 'fixture-server-key', apiBaseUrl: 'https://app.local/api',
+    fetcher: async (url, options) => {
+      calls.push({ url, options });
+      return jsonResponse({ success: true, data: { id: `ycs_${'a'.repeat(32)}` } });
+    },
+  });
+  const payload = { amount: '19', currency: 'USD', merchantOrderId: 'order-123' };
+  assert.throws(() => client.createCheckoutSession(payload), /stable idempotencyKey/);
+  assert.equal(calls.length, 0);
+  await client.createCheckoutSession(payload, { idempotencyKey: 'checkout-order-123' });
+  await client.createCheckoutSession(payload, { idempotencyKey: 'checkout-order-123' });
+  assert.equal(calls[0].url, 'https://app.local/api/checkout-sessions');
+  assert.equal(calls[0].options.headers.Authorization, 'Bearer fixture-server-key');
+  assert.equal(calls[0].options.headers['Idempotency-Key'], calls[1].options.headers['Idempotency-Key']);
+  assert.deepEqual(JSON.parse(calls[0].options.body), payload);
+  const id = `ycs_${'a'.repeat(32)}`;
+  await client.getCheckoutSession(id);
+  await client.getPublicCheckoutSession(id);
+  assert.equal(calls[2].url, `https://app.local/api/checkout-sessions/${id}`);
+  assert.equal(calls[2].options.headers.Authorization, 'Bearer fixture-server-key');
+  assert.equal(calls[3].url, `https://app.local/api/public/checkout-sessions/${id}`);
+  assert.equal(calls[3].options.headers.Authorization, undefined);
+});

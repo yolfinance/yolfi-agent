@@ -120,7 +120,7 @@ export function clearPendingRegistration(email, idempotencyKey) {
   });
 }
 
-export function savePendingSetup({ agent, checkinToken, loginUrl, expiresAt }) {
+export function savePendingSetup({ agent, checkinToken, loginUrl, expiresAt, apiBaseUrl }) {
   updateConfig(config => ({
     ...config,
     setup: {
@@ -130,6 +130,7 @@ export function savePendingSetup({ agent, checkinToken, loginUrl, expiresAt }) {
         checkinToken,
         loginUrl,
         expiresAt,
+        apiBaseUrl,
         createdAt: new Date().toISOString(),
       },
     },

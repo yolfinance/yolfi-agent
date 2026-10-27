@@ -1,23 +1,34 @@
-# Add Yolfi Payments With Claude Code
+# Add Yolfi payments with Claude Code
 
-Use the Yolfi MCP server or `npx -y @yolfi/agent`.
+Send this message in the target project:
 
-```bash
-# Remote streamable HTTP
-claude mcp add --transport http yolfi https://app.yolfi.com/mcp
-
-# Or local stdio
-claude mcp add yolfi -- npx -y @yolfi/agent mcp
+```text
+Add Yolfi payments to this project. Follow https://docs.yolfi.com/ai
 ```
 
-The packaged plugin and local stdio server expose `yolfi_agent_setup_start`: call it with `agent: "claude-code"`, open the returned login URL, then call `yolfi_agent_checkin` with the same slug and verify with `yolfi_auth_status`. A manually configured remote server uses Claude's OAuth flow instead; after OAuth, start with `yolfi_auth_status`.
+The agent inspects the project and available tools, reuses an authenticated Yolfi connection, and implements checkout and webhook handling. Connection setup is described at https://docs.yolfi.com/en/agent-kit/connections. Agent brand alone does not determine whether remote MCP, local commands, or browser tools are available.
 
-Before creating paylinks, ask the user for wallet, price, currency, and payment type. Do not commit secrets. Use existing webhook and entitlement patterns in the app when possible.
+For an already connected remote MCP server, verify with `yolfi_auth_status`, then read `yolfi_organization_get`, `yolfi_paylinks_list`, and `yolfi_webhooks_list` in that host. Remote OAuth does not create a separate local CLI credential.
 
-Expected target app changes:
+If local commands are available, start with:
 
-- ignored env/config entry for `YOLFI_API_KEY`;
-- paylink id stored in env/config;
-- checkout UI or server route;
-- webhook handler verifying `X-Yolfi-Signature`;
-- tests or smoke checks for checkout and webhook behavior.
+```bash
+npx -y @yolfi/agent auth:status
+npx -y @yolfi/agent organization:get
+npx -y @yolfi/agent paylinks:list
+npx -y @yolfi/agent webhooks:list
+```
+
+Only when local authorization is missing, run setup, open the returned URL for owner authorization, then check in and continue:
+
+```bash
+npx -y @yolfi/agent setup --agent claude-code
+npx -y @yolfi/agent checkin --agent claude-code
+npx -y @yolfi/agent auth:status
+```
+
+Reuse approved wallets, pricing, paylinks, and webhook endpoints; ask only for missing decisions. Write any needed JSON payload into the target project's working directory before referencing it with `--json`. Examples in the package are not copied there by `npx`.
+
+A fixed-paylink runtime needs the paylink ID and a webhook signing secret, not a private API key. Local CLI/MCP stores webhook secrets securely; transfer the selected endpoint's secret with `readWebhookSigningSecret(endpointId)` through the app's secret manager without printing it. Private runtime API calls require a separately provisioned server credential.
+
+Verify through the transport actually used. Test checkout code and signed webhook handling, then report what changed and which checks ran. Account authorization is not proof of live payment or webhook delivery.

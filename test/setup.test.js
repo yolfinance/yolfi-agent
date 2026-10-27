@@ -196,6 +196,63 @@ test('setup rejects successful responses that omit authorization state', async (
   );
 });
 
+test('setup reuses an unexpired pending session instead of losing its authorization state', async (t) => {
+  useTemporaryConfig(t);
+  let requests = 0;
+  const options = {
+    agent: 'codex',
+    fetcher: async () => {
+      requests += 1;
+      return textResponse({ success: true, data: {
+        agent: 'codex', checkinToken: 'existing-checkin-token',
+        loginUrl: 'https://app.yolfi.com/agent/setup/existing',
+        expiresAt: new Date(Date.now() + 600_000).toISOString(),
+      } });
+    },
+  };
+  const first = await setupAgent(options);
+  const repeated = await setupAgent(options);
+  assert.equal(requests, 1);
+  assert.equal(repeated.reused, true);
+  assert.equal(repeated.loginUrl, first.loginUrl);
+  assert.ok(!JSON.stringify(repeated).includes('existing-checkin-token'));
+});
+
+test('checkin refuses malformed credentials without replacing a local credential', async (t) => {
+  useTemporaryConfig(t);
+  await assert.rejects(checkinAgent({
+    agent: 'codex', checkinToken: 'fixture-token',
+    fetcher: async () => textResponse({ success: true, data: { status: 'connected', apiKey: 'yolfi_agent_invalid' } }),
+  }), error => error.normalized?.code === 'INVALID_SETUP_RESPONSE');
+  assert.equal(readStoredCredential().apiKey, undefined);
+});
+
+test('pending setup reuse is bound to its API environment and checkin rejects a mismatch', async (t) => {
+  useTemporaryConfig(t);
+  const calls = [];
+  const fetcher = async url => {
+    calls.push(url);
+    return textResponse({ success: true, data: {
+      agent: 'codex', checkinToken: 'environment-token',
+      loginUrl: url + '/login', expiresAt: new Date(Date.now() + 600_000).toISOString(),
+    } });
+  };
+  await setupAgent({ agent: 'codex', apiBaseUrl: 'https://one.test/api/', fetcher });
+  const reused = await setupAgent({ agent: 'codex', apiBaseUrl: 'https://one.test/api', fetcher });
+  assert.equal(reused.reused, true);
+  const other = await setupAgent({ agent: 'codex', apiBaseUrl: 'https://two.test/api', fetcher });
+  assert.notEqual(other.loginUrl, reused.loginUrl);
+  assert.equal(calls.length, 2);
+  assert.equal(readPendingSetup('codex').apiBaseUrl, 'https://two.test/api');
+  await assert.rejects(checkinAgent({ agent: 'codex', apiBaseUrl: 'https://one.test/api', fetcher }),
+    error => error.normalized?.code === 'SETUP_ENVIRONMENT_MISMATCH');
+  assert.equal(calls.length, 2);
+  await checkinAgent({ agent: 'codex', fetcher: async url => {
+    assert.equal(url, 'https://two.test/api/agent/setup/checkin');
+    return textResponse({ success: true, data: { status: 'pending' } });
+  } });
+});
+
 test('connected check-in rejects an invalid credential without replacing stored state', async (t) => {
   useTemporaryConfig(t);
   saveCredential({ apiKey: 'yolfi_agent_existing' });

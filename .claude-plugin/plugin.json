@@ -1,6 +1,6 @@
 {
   "name": "yolfi-agent-kit",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Yolfi crypto payment integration skill and bundled local MCP server for Claude Code.",
   "author": {
     "name": "Yolfi",

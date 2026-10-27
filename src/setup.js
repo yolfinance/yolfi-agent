@@ -9,6 +9,18 @@ import {
 
 export async function setupAgent(options = {}) {
   const agent = getAgent(options);
+  const apiBaseUrl = normalizeApiBaseUrl(options.apiBaseUrl);
+  const pending = readPendingSetup(agent);
+  if (pending?.apiBaseUrl === apiBaseUrl && pending.checkinToken && pending.loginUrl && Date.parse(pending.expiresAt) > Date.now()) {
+    return {
+      success: true,
+      agent,
+      loginUrl: pending.loginUrl,
+      expiresAt: pending.expiresAt,
+      reused: true,
+      next: `Continue the existing browser authorization, then run: npx -y @yolfi/agent checkin --agent ${agent}`,
+    };
+  }
   const response = await setupRequest('/agent/setup/start', { agent }, options);
   const setup = response.data || {};
   const setupAgentName = setup.agent || agent;
@@ -22,6 +34,7 @@ export async function setupAgent(options = {}) {
     checkinToken: setup.checkinToken,
     loginUrl: setup.loginUrl,
     expiresAt: setup.expiresAt,
+    apiBaseUrl,
   });
 
   return {
@@ -43,14 +56,24 @@ export async function checkinAgent(options = {}) {
     throw new YolfiApiError({
       success: false,
       code: 'SETUP_SESSION_MISSING',
-      message: `Run yolfi setup --agent ${agent} before checkin.`,
+      message: `Run npx -y @yolfi/agent setup --agent ${agent} before checkin.`,
+      raw: null,
+    });
+  }
+
+  if (options.apiBaseUrl && pendingSetup.apiBaseUrl &&
+      normalizeApiBaseUrl(options.apiBaseUrl) !== pendingSetup.apiBaseUrl) {
+    throw new YolfiApiError({
+      success: false,
+      code: 'SETUP_ENVIRONMENT_MISMATCH',
+      message: 'Use the API environment that started this setup, or start a new setup in an isolated YOLFI_CONFIG_HOME.',
       raw: null,
     });
   }
 
   const response = await setupRequest('/agent/setup/checkin', {
     checkinToken: pendingSetup.checkinToken,
-  }, options);
+  }, { ...options, apiBaseUrl: options.apiBaseUrl || pendingSetup.apiBaseUrl });
   const result = response.data || {};
 
   if (result.status === 'connected') {
@@ -65,7 +88,7 @@ export async function checkinAgent(options = {}) {
       status: 'connected',
       agent: result.agent || agent,
       keyPrefix: result.keyPrefix,
-      message: 'Yolfi is connected and ready.',
+      message: 'Yolfi credential stored. Run npx -y @yolfi/agent auth:status to verify account access in the same API environment, then continue the requested integration. This does not verify checkout or webhook delivery.',
     };
   }
 
@@ -87,7 +110,7 @@ export async function checkinAgent(options = {}) {
       connected: false,
       status: 'redeemed',
       agent: result.agent || agent,
-      message: `This setup session was already used. Run yolfi setup --agent ${agent} again if this machine is not connected.`,
+      message: `This setup session was already used. Run npx -y @yolfi/agent auth:status first, then npx -y @yolfi/agent setup --agent ${agent} again if this machine is not connected.`,
     };
   }
 
@@ -98,7 +121,7 @@ export async function checkinAgent(options = {}) {
       connected: false,
       status: 'failed',
       agent: result.agent || agent,
-      message: `Yolfi setup failed. Run yolfi setup --agent ${agent} to start a new session.`,
+      message: `Yolfi setup failed. Run npx -y @yolfi/agent setup --agent ${agent} to start a new session.`,
     };
   }
 
@@ -134,8 +157,8 @@ async function setupRequest(pathname, body, options) {
     throw new Error('A fetch implementation is required. Use Node.js 18+ or pass fetcher.');
   }
 
-  const baseUrl = options.apiBaseUrl || DEFAULT_API_BASE_URL;
-  const response = await fetcher(`${String(baseUrl).replace(/\/+$/, '')}${pathname}`, {
+  const baseUrl = normalizeApiBaseUrl(options.apiBaseUrl);
+  const response = await fetcher(`${baseUrl}${pathname}`, {
     method: 'POST',
     body: JSON.stringify(body),
     headers: { 'Content-Type': 'application/json' },
@@ -148,6 +171,10 @@ async function setupRequest(pathname, body, options) {
   }
 
   return data;
+}
+
+function normalizeApiBaseUrl(value) {
+  return String(value || DEFAULT_API_BASE_URL).replace(/\/+$/, '');
 }
 
 function parseJson(text) {

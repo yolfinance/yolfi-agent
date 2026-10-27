@@ -154,6 +154,6 @@ test('failed registration checkin directs provisioned users to browser setup', a
   const failed = await registerAgentAccount(client, payload);
 
   assert.equal(failed.data.status, 'failed');
-  assert.match(failed.data.message, /yolfi setup.*yolfi checkin/i);
+  assert.match(failed.data.message, /@yolfi\/agent setup.*@yolfi\/agent checkin/i);
   assert.equal(readPendingRegistration('owner@example.com'), undefined);
 });

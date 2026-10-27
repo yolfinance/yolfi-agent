@@ -1,177 +1,47 @@
-![Yolfi Agent Kit: AIエージェント決済連携、暗号資産決済ページ、決済リンク、MCP、CLI、SDK、Webhook](../../assets/ai-agent-payment.jpg)
+![Yolfi Agent Kit: AI エージェントによる暗号資産決済](../../assets/ai-agent-payment.png)
 
-# Yolfi Agent Kit
+# Yolfi Agent Kit: AI エージェントによる暗号資産決済
 
-[![npm version](https://img.shields.io/npm/v/@yolfi/agent.svg)](https://www.npmjs.com/package/@yolfi/agent)
-[![license](https://img.shields.io/npm/l/@yolfi/agent.svg)](../../LICENSE)
-[![Node.js 18+](https://img.shields.io/badge/node-%3E%3D18-0b7f79)](../../package.json)
+AI エージェントで暗号資産の決済リンク、ホスト型チェックアウト、webhook 署名検証を組み込みます。ローカル MCP サーバー、JSON CLI、JavaScript SDK、Yolfi Payments Agent Skill を提供します。
 
-AIエージェント向けの暗号資産決済連携です。Yolfi Agent Kit は、AIコーディングエージェントが Yolfi を通じてアプリケーションにステーブルコイン決済、決済リンク、決済ステータス確認、Webhook署名検証、Webhookベースのアクセス制御を追加できる JSON-first の SDK、CLI、エージェントスキル、MCPサーバーです。
+```text
+このプロジェクトに Yolfi 決済を追加してください。https://docs.yolfi.com/ai に従ってください。
+```
 
-Codex、Claude Code、Cursor、OpenClaw、MCPホスト、または独自AIエージェントがプロダクトを作れるものの、ユーザーを手動のダッシュボード設定に戻さずに Yolfi ワークスペースを登録し、決済リンクを作成し、Webhookを設定し、暗号資産決済のステータスを確認するための信頼できる決済APIが必要な場合に `@yolfi/agent` を使います。
-
-[ウェブサイト](https://yolfi.com/ja) | [Agent Kit](https://yolfi.com/ja/ai-agent-kit) | [ドキュメント](https://docs.yolfi.com/en/agent-kit) | [npm](https://www.npmjs.com/package/@yolfi/agent) | [GitHub](https://github.com/yolfinance/yolfi-agent) | [ガイド](https://yolfi.com/ja/blog/ai-agent-payment-integration-api)
+対象プロジェクトのエージェントにこのメッセージを送信します。エージェントはコードを確認し、利用可能な接続方法を選び、認証後も実装を続けます。所有者が提供するのは、受取ウォレットや価格など未確定の事項だけです。
 
 ## 言語
 
-このパッケージガイドを他の言語で読む:
-[English](../../README.md),
-[Español](README.es.md),
-[Deutsch](README.de.md),
-[Français](README.fr.md),
-[简体中文](README.zh-CN.md),
-[Русский](README.ru.md),
-[हिन्दी](README.hi.md),
-[Türkçe](README.tr.md),
-[한국어](README.ko.md),
-[日本語](README.ja.md).
+[English](../../README.md), [Español](README.es.md), [Deutsch](README.de.md), [Français](README.fr.md), [简体中文](README.zh-CN.md), [Русский](README.ru.md), [हिन्दी](README.hi.md), [Türkçe](README.tr.md), [한국어](README.ko.md), [日本語](README.ja.md).
 
-## 開発者が使う理由
+## ドキュメント
 
-- SaaS製品、ゲーム、マーケットプレイス、寄付ページ、デジタルダウンロード、社内ツール、エージェントが作ったアプリに AIエージェント決済を追加できます。
-- コーディングエージェントに安全な決済フローを与えられます。アプリを確認し、ワークスペースを登録または再利用し、ユーザーにウォレットと価格の判断を確認し、決済リンクを作成し、決済ページを設置し、Webhookを検証し、決済ステータスを確認します。
-- MCP暗号資産決済、JSON CLI自動化、JavaScript SDK呼び出し、Webhook署名検証、エージェントが読める手順を1つのパッケージで扱えます。
-- エージェント専用の別決済APIを維持せず、既存のYolfi APIで構築できます。
-- npm、GitHub、MCPディレクトリ、`llms.txt`、ドキュメント、サンプル、連携ガイドからエージェントがYolfiを見つけやすくなります。
+- [AI 統合ガイド](https://docs.yolfi.com/en/agent-kit)
+- [エージェント接続](https://docs.yolfi.com/en/agent-kit/connections)
+- [HTTP API](https://docs.yolfi.com/en/api)
+- [CLI](https://docs.yolfi.com/en/cli)
+- [英語の完全なパッケージガイド](../../README.md)
 
-Yolfiは暗号資産決済インフラ、ホスト型決済ページ、決済リンク、公開決済インボイス、組織設定、精算用ウォレット設定、Webhook配信を担当します。エージェントはプロジェクト調査、コード変更、ユーザー確認、対象アプリへの連携を担当します。
+## ローカル CLI
 
-## アプリに追加できるもの
-
-- Yolfi決済リンクによるホスト型暗号資産決済ページ。
-- デジタル製品、クレジット、ファイル、ツール、ゲームアイテム向けの一回限りの決済リンク。
-- Yolfiアカウントが対応している場合の継続決済またはサブスクリプション型の決済リンク設定。
-- 寄付ページとクリエイター支援ページ。
-- 決済リンクから公開決済インボイスを作成するサーバールート。
-- Yolfi公開決済endpointによる決済ステータス確認。
-- `X-Yolfi-Signature` を検証するWebhookハンドラー。
-- 確認済み決済イベントの後だけアクセスを解放するWebhookベースの権限ロジック。
-- Codex、Claude Code、Cursor、OpenClaw、独自自動化向けのエージェントフロー。
-
-## エージェントスキル
-
-このパッケージには `SKILL.md` に **Yolfi Payments Skill** が含まれています。ユーザーが暗号資産決済、決済リンク、決済ページ、サブスクリプション、寄付、有料ダウンロード、有料アクセス、Webhookベースの権限を追加したい場合に、コーディングエージェントと一緒に使います。
-
-推奨される安全なフロー:
-
-```txt
-アプリ確認 -> YOLFI_API_KEY確認 -> 必要なら登録 -> ユーザーにウォレットと価格を確認 -> 組織を設定 -> 決済リンクを作成または再利用 -> 決済ページを追加 -> Webhook検証を追加 -> ステータス確認
-```
-
-このスキルは、エージェントが自動で行ってよいことと、ユーザーに判断を求めるべきことを示します。エージェントはウォレットアドレス、価格、プラン、通貨、シークレット保存場所、破壊的な決済リンク操作を作り上げてはいけません。
-
-## インストール
-
-プロジェクトにインストール:
-
-```bash
-npm install @yolfi/agent
-```
-
-インストールせずに実行:
+Node.js 18 以降が必要です。npx を使えばグローバルインストールは不要です。認証がない場合、エージェントが setup を実行して所有者向けに loginUrl を開き、その後 checkin と auth:status を実行します。仮の YOLFI_API_KEY は保存済み認証情報より優先されるため設定しないでください。
 
 ```bash
 npx -y @yolfi/agent help
+npx -y @yolfi/agent auth:status
+npx -y @yolfi/agent setup --agent local-agent
+npx -y @yolfi/agent checkin --agent local-agent
+npx -y @yolfi/agent auth:status
 ```
 
-stdio MCPサーバーを起動:
+## MCP 接続
 
-```bash
-npx -y @yolfi/agent mcp
-```
-
-このリポジトリ内でローカル開発する場合:
-
-```bash
-node packages/yolfi-agent/src/cli.js help
-```
-
-## 認証
-
-非公開コマンドでは、明示的なYolfi APIキー、またはこの端末に安全に保存されたエージェント認証情報を使用します:
-
-```bash
-export YOLFI_API_KEY="yolfi_..."
-```
-
-CLIとMCPサーバーは、デフォルトでYolfiの本番APIとチェックアウトを使用します。
-
-新規ユーザーの場合、メールアドレスとプロジェクト名を確認した後、エージェントがメール確認付きの登録を開始できます:
-
-```bash
-yolfi auth:agent-register \
-  --email "owner@example.com" \
-  --project-name "Space Shop" \
-  --agent-name "Codex" \
-  --integration-intent accept_payments \
-  --ref npm
-```
-
-メールアドレスは未登録である必要があります。既存アカウントではOAuthまたはブラウザ設定を使用します。最初の呼び出しで確認リンクを送信し、保留中のcheck-in tokenを端末に安全に保存します。所有者がリンクを開いた後、同じコマンドをもう一度実行してください。その時点でパッケージは一度だけ発行されるエージェント認証情報を保存し、CLIとMCPの出力から完全なキーを取り除きます。
-
-## クイックスタート
-
-APIキーに紐づくワークスペースを確認:
-
-```bash
-yolfi auth:status
-```
-
-ユーザーがウォレットアドレスを提供した後、精算用ウォレットを設定:
-
-```bash
-yolfi settlement:configure --json examples/organization.settlement.json
-```
-
-Webhook配信を設定:
-
-```bash
-yolfi webhooks:configure \
-  --url https://example.com/api/yolfi/webhook \
-  --adapter STRIPE
-```
-
-重複作成の前に既存の決済リンクを一覧:
-
-```bash
-yolfi paylinks:list --page 1 --rows 10
-```
-
-一回限りの決済リンクを作成:
-
-```bash
-yolfi paylinks:create --json examples/paylink.one-time.json
-```
-
-決済リンクから公開決済インボイスを作成:
-
-```bash
-yolfi payments:create --json examples/payment.create.json
-```
-
-決済ステータスを確認:
-
-```bash
-yolfi payments:status --id <paymentId>
-```
-
-すべてのCLIコマンドはJSONを出力するため、エージェントはターミナルテキストを解析せずに結果を読めます。
-
-## 暗号資産決済向けMCPサーバー
-
-Yolfi Agent Kitは同じnpmパッケージ内にstdio MCPサーバーを含みます:
+単一のローカルサーバーがツール、リソース、プロンプトを提供します。https://app.yolfi.com/mcp の OAuth はホストが管理します。同じホストで yolfi_auth_status を呼び出してください。別の CLI はその OAuth を読みません。接続方式はエージェント名だけでなく環境の機能で選びます。
 
 ```json
 {
   "mcpServers": {
-    "yolfi-api": {
-      "command": "npx",
-      "args": ["-y", "@yolfi/agent", "mcp"],
-      "env": {
-        "YOLFI_API_KEY": "..."
-      }
-    },
-    "yolfi-knowledge": {
+    "yolfi": {
       "command": "npx",
       "args": ["-y", "@yolfi/agent", "mcp"]
     }
@@ -179,212 +49,26 @@ Yolfi Agent Kitは同じnpmパッケージ内にstdio MCPサーバーを含み�
 }
 ```
 
-`yolfi_agent_register` は公開エージェント登録エンドポイントを呼び出し、`YOLFI_API_KEY` は不要です。確認リンクを開いた後、同じツールをもう一度呼び出すと、一度だけ発行されるAPIキーが端末に保存されます。非公開の `yolfi-api` ツールにはこのキーが必要です。`yolfi-knowledge` リソースはキーがまだない段階でエージェントが連携手順を理解するのに役立ちます。
+## 再利用とシークレット
 
-利用できるMCPツール:
-
-- `yolfi_agent_register`
-- `yolfi_auth_status`
-- `yolfi_organization_get`
-- `yolfi_organization_update`
-- `yolfi_settlement_configure`
-- `yolfi_webhooks_configure`
-- `yolfi_paylinks_create`
-- `yolfi_paylinks_list`
-- `yolfi_paylinks_get`
-- `yolfi_paylinks_disable`
-- `yolfi_payments_create`
-- `yolfi_payments_status`
-- `yolfi_webhooks_verify`
-
-Webhookエンドポイントの作成時またはシークレットのローテーション時、CLIは一度だけ発行される署名シークレットを保護されたローカルYolfi設定に保存し、CLIやMCPの出力に平文で返しません。保存済みのシークレットを使うには、`endpointId` を `yolfi_webhooks_verify` に渡します。CIまたはシークレットマネージャー環境では、明示的に管理する `YOLFI_WEBHOOK_SECRET` を代わりに指定できます。
-
-`yolfi_paylinks_disable` のような破壊的ツールは、ユーザーの明示的な確認後にのみ実行してください。
-
-## エージェント向けJSONフロー
-
-エージェントはpayloadファイルを書き、CLIに渡せます:
-
-```json
-{
-  "name": "Premium Download",
-  "description": "One-time access to a digital product.",
-  "type": "ONE_TIME",
-  "price": "19",
-  "currency": "USD",
-  "collectEmail": true,
-  "metadata": {
-    "source": "agent",
-    "productSlug": "premium-download"
-  }
-}
-```
-
-次に実行:
+まず組織、ウォレット、関連する決済リンク、webhook エンドポイント、プロジェクト設定を読みます。承認済みの値を再利用し、不足事項だけ質問します。settlement:configure は PATCH で指定ネットワークを更新し、他は保持します。webhooks:add は独立したエンドポイントを作るため、先に既存のものを探してください。
 
 ```bash
-yolfi paylinks:create --json ./paylink.json
+npx -y @yolfi/agent organization:get
+npx -y @yolfi/agent paylinks:list
+npx -y @yolfi/agent webhooks:list
 ```
 
-エージェントは返された決済リンクIDを対象アプリのenv/configに保存し、顧客向け決済ページとステータス確認にはYolfi公開決済endpointを使うべきです。
+--json を使う前に対象プロジェクト内に JSON ファイルを作成します。npx はパッケージの examples を作業ディレクトリにコピーしません。
 
-## コマンド
+ローカル CLI/MCP は webhook の作成・ローテーション時に署名シークレットを保護された設定に保存し、出力から除去します。エンドポイント ID または YOLFI_WEBHOOK_SECRET で検証してください。SDK の readWebhookSigningSecret(endpointId) で値を表示せずアプリのシークレット管理に渡せます。コマンドやツールの引数にシークレットを含めないでください。
 
 ```bash
-yolfi auth:agent-register --email "owner@example.com" --project-name "App" --agent-name "Codex" --integration-intent accept_payments
-yolfi auth:status
-yolfi organization:update --json organization.json
-yolfi settlement:configure --json settlement.json
-yolfi webhooks:configure --url https://example.com/api/yolfi/webhook --adapter STRIPE
-yolfi paylinks:create --json paylink.json
-yolfi paylinks:list --page 1 --rows 10
-yolfi paylinks:get --id <paylinkId>
-yolfi paylinks:disable --id <paylinkId> --confirm
-yolfi payments:create --json payment.json
-yolfi payments:status --id <paymentId>
-yolfi webhooks:verify --payload payload.json --signature <signature>
-yolfi mcp
+npx -y @yolfi/agent webhooks:verify --endpoint-id <endpointId> --payload ./raw-webhook.json --signature <signature>
 ```
 
-## Endpointアダプターマトリクス
+ホスト型決済リンクと公開決済照会にはアプリの API キーは不要です。非公開 Checkout Session 作成には別のサーバー認証情報と、同じ注文の再試行で使う固定の冪等性キーが必要です。エージェントの OAuth はアプリの認証情報ではありません。
 
-Yolfi Agent Kitは2つ目の `/api/agent/*` APIを作りません。エージェントの操作を現在のYolfi APIに対応付けます:
+## 検証
 
-| エージェント操作 | API endpoint | 認証 |
-| --- | --- | --- |
-| Yolfiワークスペースを登録 | `POST /api/auth/agent/register` | public；APIキー不要 |
-| アカウントを確認 | `GET /api/private/organization/current` | bearer API key |
-| 組織と精算用ウォレットを設定 | `PUT /api/private/organization/current` | bearer API key |
-| Webhookエンドポイントを作成 | `POST /api/private/organization/webhook-endpoints` | bearer API key |
-| APIキー状態を取得 | `GET /api/private/organization/api-key` | bearer API key または cookie |
-| 決済リンクを作成 | `POST /api/private/paylinks/create` | bearer API key |
-| 決済リンクを一覧 | `GET /api/private/paylinks` | bearer API key |
-| 決済リンクを取得 | `GET /api/private/paylinks/:id` | bearer API key |
-| 決済リンクを編集 | `POST /api/private/paylinks/edit` | bearer API key |
-| 決済リンクを無効化 | `POST /api/private/paylinks/disable` | bearer API key と確認 |
-| 公開決済リンク情報 | `GET /api/public/paylinks/:id` | public |
-| 公開決済インボイスを作成 | `POST /api/public/payments` | public |
-| 決済ステータス | `GET /api/public/payments/:id` | public |
-| 販売者取引 | `GET /api/private/transactions` | bearer API key |
-
-## SDK
-
-```js
-import { YolfiClient } from "@yolfi/agent";
-
-const yolfi = new YolfiClient({
-  apiKey: process.env.YOLFI_API_KEY,
-});
-
-const account = await yolfi.authStatus();
-
-const paylink = await yolfi.createPaylink({
-  name: "Premium Download",
-  description: "One-time access to a digital product.",
-  type: "ONE_TIME",
-  price: "19",
-  currency: "USD",
-  collectEmail: true,
-  metadata: {
-    source: "agent",
-    productSlug: "premium-download",
-  },
-});
-
-console.log(account.success);
-console.log(paylink.data?.id ?? paylink.id);
-```
-
-## Webhook検証
-
-YolfiはWebhook payloadに `X-Yolfi-Signature` で署名します。JSONを解析してイベントを信頼する前に、生のリクエストボディを検証してください:
-
-```js
-import { verifyWebhookSignature } from "@yolfi/agent";
-
-const valid = verifyWebhookSignature(
-  rawBody,
-  request.headers["x-yolfi-signature"],
-  process.env.YOLFI_WEBHOOK_SECRET,
-);
-
-if (!valid) {
-  throw new Error("Invalid Yolfi webhook signature");
-}
-```
-
-フロントエンドのリダイレクトを決済証明として扱わないでください。検証済みWebhookとYolfi決済ステータス確認を使ってください。
-
-## AIコーディングエージェントで使う
-
-Yolfi Agent Kitは、ユーザーが「決済を追加して」「このデジタル商品を売って」「寄付ボタンを追加して」「このゲームに課金を入れて」「この機能を有料アクセスの後ろに置いて」といった高レベルの指示を出すエージェント型決済フロー向けに作られています。
-
-- Codex: リポジトリを確認し、決済ページのルート/コンポーネントを追加し、env変数を設定し、検証済みWebhookを既存のアクセス制御ロジックにつなぎます。
-- Claude Code: MCPサーバーとAgent Skillを使って、決済リンク、サーバーハンドラー、ステータス確認を追加し、ウォレットと価格の判断ではユーザー承認を取ります。
-- Cursor: Yolfiキーをコミット済みソースに入れずに、決済UIとバックエンドハンドラーを追加します。
-- OpenClawと独自エージェント: CLI、SDK、MCPツール、JSON payloadを通じてプロダクト構築フローをYolfiにつなぎます。
-
-推奨エージェント経路:
-
-```txt
-auth:status -> organization:get -> paylinks:list -> ユーザー承認 -> settlement:configure -> webhooks:configure -> paylinks:create -> 決済ページを設置 -> webhook検証 -> payments:status
-```
-
-## エージェント向けレシピ
-
-`examples/` フォルダにはコピーして使えるフローとJSON payloadがあります:
-
-- `examples/codex/add-yolfi-payments.md`
-- `examples/claude-code/add-yolfi-payments.md`
-- `examples/cursor/add-yolfi-payments.md`
-- `examples/paylink.one-time.json`
-- `examples/paylink.recurring.json`
-- `examples/organization.settlement.json`
-- `examples/payment.create.json`
-- `examples/webhook.stripe-adapter.json`
-
-## このパッケージではないもの
-
-- 別のYolfiダッシュボードではありません。
-- ウォレットプロバイダーではありません。
-- 重複したビジネスロジックを持つ2つ目の決済APIではありません。
-- 精算用ウォレット、商品名、価格、通貨、サブスクリプション、寄付金額を作り上げません。
-- 破壊的操作に対するユーザー確認を回避しません。
-- ソースコードにシークレットを保存しません。
-- リダイレクトを決済確認として使いません。
-
-## 現在の制限
-
-- MCPサーバーは現在 stdio transport を使います。
-- Webhook署名には各エンドポイントの保護されたシークレットを使用し、組織APIキーを署名シークレットとして使用することはありません。
-- エージェント登録は確認済みcheck-in時にAPIキーを一度だけ返し、ローカルパッケージが安全に保存して出力から取り除きます。
-- 最終的な決済確認はUIリダイレクトではなく、検証済みWebhookと決済ステータス確認から行うべきです。
-- MCPディレクトリの承認はこのパッケージとは別です。listingが受理されるまで公式ディレクトリ承認を主張しないでください。
-
-## このパッケージが対象にする検索語句
-
-開発者やエージェント開発者はよく次のように検索します:
-
-- AIエージェント決済連携
-- AIコーディングエージェント決済
-- MCP決済サーバー
-- MCP暗号資産決済
-- エージェント向け暗号資産決済API
-- AIエージェント向け決済リンク
-- アプリ向けステーブルコイン決済
-- Webhook決済検証
-- エージェント型決済フロー
-- Codex、Claude Code、Cursorで暗号資産決済を追加
-
-Yolfi Agent Kitはこれらのフローのパッケージ入口です。
-
-## リンク
-
-- Yolfi: <https://yolfi.com/ja>
-- Agent Kitページ: <https://yolfi.com/ja/ai-agent-kit>
-- ドキュメント: <https://docs.yolfi.com/en/agent-kit>
-- LLMインデックス: <https://docs.yolfi.com/llms.txt>
-- 完全なLLMコンテキスト: <https://docs.yolfi.com/llms-full.txt>
-- npmパッケージ: <https://www.npmjs.com/package/@yolfi/agent>
-- GitHubリポジトリ: <https://github.com/yolfinance/yolfi-agent>
-- 連携ガイド: <https://yolfi.com/ja/blog/ai-agent-payment-integration-api>
+認証、コードテスト、実行環境へのシークレット設定、実際の決済と webhook 配信の検証を区別して報告します。接続成功やブラウザーのリダイレクトだけでは全体の動作を証明できません。

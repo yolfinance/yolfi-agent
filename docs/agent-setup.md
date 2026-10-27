@@ -1,123 +1,35 @@
-# Yolfi agent and MCP setup
+# Agent connection reference
 
-Yolfi supports two MCP transports:
+The canonical connection guide is https://docs.yolfi.com/en/agent-kit/connections. The agent integration workflow is https://docs.yolfi.com/ai.
 
-- Remote streamable HTTP: `https://app.yolfi.com/mcp`
-- Local stdio: `npx -y @yolfi/agent mcp`
+Send one message to the agent in the target project:
 
-Use the remote endpoint when the host supports remote MCP and does not need local process access. Use stdio when the host can launch Node.js locally or when you need a credential stored on that machine.
-
-## Authorize the local CLI
-
-Start setup with a stable host slug:
-
-```bash
-npx -y @yolfi/agent setup --agent codex
+```text
+Add Yolfi payments to this project. Follow https://docs.yolfi.com/ai
 ```
 
-Open the `loginUrl` from the JSON response and finish authentication. Then check in with the same slug:
+The agent should inspect its available tools and reuse an authenticated Yolfi connection before installing anything. Remote MCP OAuth belongs to that host; local CLI and stdio MCP share the protected local Yolfi config. A remote login does not authorize a separate CLI process. After MCP authentication succeeds, continue through its tools without requesting an organization API key or starting a separate CLI login. Local MCP likewise uses its stored browser-setup credential automatically.
+
+## Remote MCP
+
+Endpoint: `https://app.yolfi.com/mcp` using Streamable HTTP. Use host-managed OAuth, then call `yolfi_auth_status` in that host. Read available tools from the server. Local credential setup, registration, and local signature helpers are not remote tools.
+
+If the host cannot add or authorize the connector automatically, give the owner only the necessary host action, then continue the original task when it becomes available. Host UI paths change; use the canonical connection guide instead of assuming a brand guarantees a particular capability.
+
+## Local CLI or stdio MCP
+
+Node.js 18 or later is required:
 
 ```bash
-npx -y @yolfi/agent checkin --agent codex
+npx -y @yolfi/agent auth:status
+# If local authorization is missing:
+npx -y @yolfi/agent setup --agent local-agent
+# Open loginUrl for owner authorization, then:
+npx -y @yolfi/agent checkin --agent local-agent
 npx -y @yolfi/agent auth:status
 ```
 
-The pending check-in token and connected `yolfi_agent_*` credential are saved in `~/.yolfi/config.json`. On filesystems that support POSIX permissions, the directory is `0700` and the file is `0600`. Set `YOLFI_CONFIG_HOME` to use another config directory.
-
-Credential precedence is explicit SDK option, then `YOLFI_API_KEY`, then the stored local credential. This lets CI and secret managers override a developer-machine login without modifying the config file.
-
-## Create a new account through the agent
-
-For a user who does not have a Yolfi account, the local CLI or MCP server can start an email-confirmed signup without opening the dashboard. The agent must ask the user to confirm the email address and project name first:
-
-```bash
-npx -y @yolfi/agent auth:agent-register \
-  --email "owner@example.com" \
-  --project-name "Space Shop" \
-  --agent-name "Codex" \
-  --integration-intent accept_payments
-```
-
-The first call sends the owner a confirmation link and stores the pending check-in token in the protected local config. After the owner opens the link, run the same command again with the same arguments. The package then redeems and stores the one-time agent credential locally while removing it from command and MCP output.
-
-If the email already exists, registration stops and the user must use remote OAuth or local browser setup. A repeated call and a lost response are safe because the package preserves and reuses the pending idempotency key and check-in token. If signup expires or fails after provisioning, use browser setup instead of registering the same email again.
-
-## Verify the active connection
-
-Do not use a browser request or dashboard ping to the public MCP URL as a connection check. It confirms only that the server is reachable. The MCP host owns its OAuth session, so verify the actual client by running `yolfi_auth_status` from that agent after OAuth or local check-in.
-
-## Codex
-
-Codex CLI, the IDE extension, and the ChatGPT desktop Codex host share MCP configuration.
-
-Remote:
-
-```bash
-codex mcp add yolfi --url https://app.yolfi.com/mcp
-codex mcp login yolfi
-```
-
-Local stdio:
-
-```bash
-codex mcp add yolfi -- npx -y @yolfi/agent mcp
-```
-
-Confirm the connection with:
-
-```bash
-codex mcp list
-```
-
-In an interactive Codex session, use `/mcp` to inspect connected tools. Remote MCP uses the browser OAuth flow managed by Codex. For local stdio authorization, ask Codex to call `yolfi_agent_setup_start` with `agent: "codex"`, open the returned URL, then ask it to call `yolfi_agent_checkin` with the same slug and finally `yolfi_auth_status`.
-
-You can also add either transport from **Settings → MCP servers → Add server** in the ChatGPT desktop app or Codex IDE extension, then restart the host. See the [official Codex MCP documentation](https://learn.chatgpt.com/docs/extend/mcp).
-
-## Claude Code
-
-Remote:
-
-```bash
-claude mcp add --transport http yolfi https://app.yolfi.com/mcp
-```
-
-Open Claude Code, run `/mcp`, select Yolfi, and complete browser authorization.
-
-Local stdio:
-
-```bash
-claude mcp add yolfi -- npx -y @yolfi/agent mcp
-```
-
-For local authorization, ask Claude Code to call `yolfi_agent_setup_start` with `agent: "claude-code"`, open the returned URL, then call `yolfi_agent_checkin` with the same slug and `yolfi_auth_status`.
-
-## ChatGPT desktop
-
-1. Open **Settings → MCP servers**.
-2. Select **Add server**.
-3. Choose **Streamable HTTP**, name it `yolfi`, and enter `https://app.yolfi.com/mcp`.
-4. Save the server and select **Restart**.
-5. Select **Authenticate**, complete Yolfi OAuth in the browser, and verify the connection with `yolfi_auth_status`.
-
-The desktop app can also use the local stdio command `npx -y @yolfi/agent mcp` when Node.js is available on the machine.
-
-## ChatGPT web
-
-ChatGPT web does not launch local stdio servers and does not read `~/.codex/config.toml`. It uses remote MCP-backed plugins in Work mode.
-
-For developer-mode testing:
-
-1. Open [ChatGPT](https://chatgpt.com) and go to **Settings → Security and login**.
-2. Enable **Developer mode**.
-3. Open **Settings → Plugins** (or the [Plugins page](https://chatgpt.com/plugins)) and select the plus button.
-4. Create a developer-mode app whose MCP server URL is `https://app.yolfi.com/mcp`.
-5. Start a Work mode chat, enable the Yolfi plugin, complete OAuth, and run `yolfi_auth_status`.
-
-For normal workspace use, install the published Yolfi plugin from **Plugins** in Work mode. Plugin availability and tool access may be controlled by workspace administrators. See the [official OpenAI plugin documentation](https://learn.chatgpt.com/docs/plugins).
-
-## Generic MCP host
-
-Local stdio configuration:
+For stdio, configure one server:
 
 ```json
 {
@@ -130,13 +42,16 @@ Local stdio configuration:
 }
 ```
 
-For the local stdio server, call:
+The bundled Codex and Claude plugins launch this local server. Call `yolfi_agent_setup_start`, open its `loginUrl`, resume `yolfi_agent_checkin` using the same `agent` slug, and verify with `yolfi_auth_status`. The CLI can continue an integration while the host reloads its MCP configuration, but only with its own verified local authorization.
 
-1. `yolfi_agent_setup_start` with a stable `agent` slug.
-2. Open the returned `loginUrl` and finish browser authentication.
-3. `yolfi_agent_checkin` with the same slug.
-4. `yolfi_auth_status` to verify access before using private payment tools.
+Credentials are stored with owner-only permissions where supported, atomic writes, and process locking. `YOLFI_CONFIG_HOME` selects an isolated profile. Explicit SDK credentials override `YOLFI_API_KEY`, which overrides the local config. Omit placeholder environment credentials when using browser authorization.
 
-The packaged Codex and Claude plugins use this local server, so these tools are available after plugin installation. If the host is configured manually with `https://app.yolfi.com/mcp` instead, complete OAuth in that host and start with `yolfi_auth_status`; the remote server does not expose local setup, check-in, or signup tools.
+## New users and recovery
 
-For a brand-new user on the plugin or local server, call `yolfi_agent_register` after the user confirms an email and project name. Open the emailed confirmation link, then call the same tool again with the same arguments to store the one-time credential. Existing users should use OAuth or browser setup. For CI, create an API key in Yolfi settings and pass it through `YOLFI_API_KEY`.
+Use `auth:agent-register` or `yolfi_agent_register` only for an explicitly new account, with an owner-confirmed email and project name. The owner opens the emailed confirmation link; the agent repeats the same operation with the same arguments. Pending state and the initial signup idempotency key survive a lost first response. Existing users use browser authorization.
+
+A lost response after a one-time credential was redeemed cannot be replayed. Check the active credential first; if missing, start browser authorization again. Reuse an unexpired pending browser session in the same API environment instead of issuing a new one on every attempt. Use separate YOLFI_CONFIG_HOME profiles for different API environments.
+
+## Continue to implementation
+
+Authorization is only a connection check. Read organization settings, paylinks, webhook endpoints, and project configuration; reuse approved values and ask only for missing decisions. Implement the requested checkout and access logic, provision runtime secrets through the app's existing mechanism, and report the exact verification performed. See the [package guide](../README.md) for CLI commands, local secret storage, and the distinction between provisioning and application credentials.
